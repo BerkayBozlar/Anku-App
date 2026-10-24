@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/backend/">
+    <Project Path="backend/AnkuApp.Api/AnkuApp.Api.csproj" />
+    <Project Path="backend/AnkuApp.Web/AnkuApp.Web.csproj" />
+  </Folder>
+</Solution>
