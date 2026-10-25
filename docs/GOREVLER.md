@@ -41,9 +41,9 @@ Belgelerde kesin olan tarihler: başlangıç **21 Ekim**, ilk video ve iskelet *
 - [x] **B** İlk veri modeli taslağı — [veritabani-taslagi.md](veritabani-taslagi.md) ([PR #2](https://github.com/BerkayBozlar/Anku-App/pull/2))
 - [ ] **B** API sözleşmesi: Flutter'ın çağıracağı ilk uç noktalar (auth, events) — istek/yanıt örnekleriyle `docs/api-sozlesmesi.md`
 - [ ] **B** İlk video (her iki ders için, B lider)
-- [ ] **Y** `mobile/` altında Flutter projesi (`flutter create`, paket adı ör. `tr.edu.ankara.ankuapp`), Android emülatörde çalışan ilk ekranlar
-- [ ] **Y** Web API bağlantı ayarı: base URL yapılandırması (emülatörden `10.0.2.2`), dio ile `/api/health` çağrısı ekranda görünsün
-- [ ] **Y** Harita denemesi: maplibre_gl ile Tandoğan merkezli basit bir harita ekranı
+- [x] **Y** `mobile/` altında Flutter projesi (`tr.edu.ankara.anku_app`), Android emülatörde çalışan ilk ekranlar: ana sayfa, 7 modül kartı, alt gezinme
+- [x] **Y** Web API bağlantı ayarı: `API_BASE_URL` (emülatörde `http://10.0.2.2:5098`), dio ile `/api/health` sonucu ana sayfadaki kartta
+- [x] **Y** Harita denemesi: maplibre_gl + OSM ile Tandoğan merkezli harita ekranı
 - [x] **B+Y** Görev panosu (bu belge)
 - [ ] **B+Y** Kabul ölçütleri: yedi modülün her biri için "bitti" tanımı (aşağıdaki modül listesine birer satır)
 - [ ] **Y** Kendi hesabından ilk commit/push
