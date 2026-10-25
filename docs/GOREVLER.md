@@ -39,14 +39,14 @@ Belgelerde kesin olan tarihler: başlangıç **21 Ekim**, ilk video ve iskelet *
 
 - [x] **B** ASP.NET Core MVC + Web API projeleri, `AnkuApp.slnx`, `/api/health` ([PR #1](https://github.com/BerkayBozlar/Anku-App/pull/1))
 - [x] **B** İlk veri modeli taslağı — [veritabani-taslagi.md](veritabani-taslagi.md) ([PR #2](https://github.com/BerkayBozlar/Anku-App/pull/2))
-- [ ] **B** API sözleşmesi: Flutter'ın çağıracağı ilk uç noktalar (auth, events) — istek/yanıt örnekleriyle `docs/api-sozlesmesi.md`
-- [ ] **B** İlk video (her iki ders için, B lider)
+- [x] **B** API sözleşmesi: Flutter'ın çağıracağı ilk uç noktalar (auth, events) — istek/yanıt örnekleriyle [api-sozlesmesi.md](api-sozlesmesi.md)
+- [x] **B** İlk video (her iki ders için, B lider)
 - [x] **Y** `mobile/` altında Flutter projesi (`tr.edu.ankara.anku_app`), Android emülatörde çalışan ilk ekranlar: ana sayfa, 7 modül kartı, alt gezinme
 - [x] **Y** Web API bağlantı ayarı: `API_BASE_URL` (emülatörde `http://10.0.2.2:5098`), dio ile `/api/health` sonucu ana sayfadaki kartta
 - [x] **Y** Harita denemesi: maplibre_gl + OSM ile Tandoğan merkezli harita ekranı
 - [x] **B+Y** Görev panosu (bu belge)
-- [ ] **B+Y** Kabul ölçütleri: yedi modülün her biri için "bitti" tanımı (aşağıdaki modül listesine birer satır)
-- [ ] **Y** Kendi hesabından ilk commit/push
+- [x] **B+Y** Kabul ölçütleri: yedi modülün her biri için "bitti" tanımı (aşağıdaki modül listesine birer satır)
+- [x] **Y** Kendi hesabından ilk commit/push
 
 ## Hafta 2 — Kimlik doğrulama ve veri katmanı
 
@@ -114,10 +114,10 @@ Belgelerde kesin olan tarihler: başlangıç **21 Ekim**, ilk video ve iskelet *
 
 ## Yedi modül kontrol listesi (teslimde hepsi temel sürümüyle çalışmalı)
 
-- [ ] Tandoğan kampüs haritası
-- [ ] Ders ve sınav programı görseli
-- [ ] Duyurular ve bildirimler
-- [ ] Kulüpler ve etkinlikler
-- [ ] Yemekhane menüsü
-- [ ] Akademik takvim ve hatırlatıcılar
-- [ ] Not hesaplama
+- [ ] **Tandoğan kampüs haritası:** Harita açılır; bina ve tesis işaretleri görüntülenir; kullanıcı arama yapabilir, GPS konumunu görebilir ve seçilen noktaya temel yönlendirme alabilir.
+- [ ] **Ders ve sınav programı görseli:** Kullanıcı galeriden görsel seçebilir; görsel cihazda saklanır, yakınlaştırılabilir, değiştirilebilir ve silinebilir.
+- [ ] **Duyurular ve bildirimler:** Resmî kaynaktan alınan duyurular tekrar oluşturmadan listelenir; ayrıntı ve kaynak bağlantısı açılır; yeni içerik uygulama içinde bildirilir.
+- [ ] **Kulüpler ve etkinlikler:** Öğrenci kulüp ve etkinlikleri listeleyip ayrıntılarını görebilir, kulüp takip edebilir ve uygun etkinliğe başvurabilir; yetkili roller kapsamları içinde etkinlik CRUD işlemlerini yapabilir.
+- [ ] **Yemekhane menüsü:** Güncel yemek menüsü tarih ve kaynak bilgisiyle API üzerinden alınır; veri olmadığında anlaşılır bir boş veya hata durumu gösterilir.
+- [ ] **Akademik takvim ve hatırlatıcılar:** Akademik tarihler listelenir; kullanıcı seçtiği tarih için cihazında çalışan yerel hatırlatıcı oluşturabilir ve silebilir.
+- [ ] **Not hesaplama:** Kullanıcı sınırsız değerlendirme kalemi ve ağırlık girebilir; ağırlıklı notu ve hedef final notunu hesaplayabilir; ulaşılamayan hedef ve baraj durumu için uyarı görür.
