@@ -1,4 +1,5 @@
-/// API'deki roller (docs/api-sozlesmesi.md).
+/// API'deki roller. API rol adlarını "Yönetici", "Kulüp Yetkilisi" gibi Türkçe
+/// karakterli ya da "Yonetici" gibi sade yazımla döndürebilir; ikisi de tanınır.
 enum UserRole {
   yonetici('Yonetici', 'Yönetici'),
   kulupYetkilisi('KulupYetkilisi', 'Kulüp Yetkilisi'),
@@ -6,16 +7,45 @@ enum UserRole {
 
   const UserRole(this.apiName, this.label);
 
+  /// Cihazda saklanan sade ad.
   final String apiName;
   final String label;
 
   /// Tanınmayan rol en az yetkili rol olarak ele alınır.
-  static UserRole fromApi(String? value) {
+  static UserRole fromApi(String? value) =>
+      _tryParse(value) ?? UserRole.ogrenci;
+
+  /// Birden çok rol varsa en yetkili olanı seçer (enum sırası yetki sırasıdır).
+  static UserRole fromApiList(Iterable<Object?> values) {
+    final known = values.map((v) => _tryParse(v?.toString())).toSet();
     return UserRole.values.firstWhere(
-      (role) => role.apiName == value,
+      known.contains,
       orElse: () => UserRole.ogrenci,
     );
   }
+
+  static UserRole? _tryParse(String? value) {
+    if (value == null) return null;
+    final key = _simplify(value);
+    for (final role in UserRole.values) {
+      if (_simplify(role.apiName) == key || _simplify(role.label) == key) {
+        return role;
+      }
+    }
+    return null;
+  }
+
+  static const _turkish = {
+    'ç': 'c', 'ğ': 'g', 'ı': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u', //
+    'Ç': 'c', 'Ğ': 'g', 'İ': 'i', 'Ö': 'o', 'Ş': 's', 'Ü': 'u',
+  };
+
+  // "Kulüp Yetkilisi" -> "kulupyetkilisi"
+  static String _simplify(String value) => value
+      .split('')
+      .where((c) => c.trim().isNotEmpty)
+      .map((c) => _turkish[c] ?? c.toLowerCase())
+      .join();
 }
 
 class AuthUser {
@@ -26,12 +56,16 @@ class AuthUser {
     required this.role,
   });
 
+  /// Giriş yanıtındaki `user` nesnesi (`roles` dizisi) ya da cihazda saklanan biçim (`role`).
   factory AuthUser.fromJson(Map<String, dynamic> json) {
+    final roles = json['roles'];
     return AuthUser(
       id: json['id'] as String,
       fullName: json['fullName'] as String? ?? '',
       email: json['email'] as String? ?? '',
-      role: UserRole.fromApi(json['role'] as String?),
+      role: roles is List
+          ? UserRole.fromApiList(roles)
+          : UserRole.fromApi(json['role'] as String?),
     );
   }
 

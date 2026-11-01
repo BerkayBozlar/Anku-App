@@ -106,7 +106,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       controller: _password,
                       decoration: const InputDecoration(
                         labelText: 'Parola',
-                        helperText: 'En az 8 karakter',
+                        helperText: 'En az 8 karakter; büyük ve küçük harf, rakam, özel karakter',
+                        helperMaxLines: 2,
                         prefixIcon: Icon(Icons.lock_outline),
                         border: OutlineInputBorder(),
                       ),

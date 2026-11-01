@@ -21,11 +21,15 @@ class _StubAdapter implements HttpClientAdapter {
     Future<void>? cancelFuture,
   ) async {
     lastRequest = options;
+    // API düz metin hatalarını text/plain olarak döndürür
+    final text = body is String;
     return ResponseBody.fromString(
-      jsonEncode(body),
+      text ? body as String : jsonEncode(body),
       status,
       headers: {
-        Headers.contentTypeHeader: ['application/json'],
+        Headers.contentTypeHeader: [
+          text ? 'text/plain; charset=utf-8' : 'application/json',
+        ],
       },
     );
   }
@@ -49,7 +53,7 @@ void main() {
         'id': '1',
         'fullName': 'Deneme Yönetici',
         'email': 'yonetici@ankara.edu.tr',
-        'role': 'Yonetici',
+        'roles': ['Yönetici'],
       },
     });
 
@@ -66,7 +70,9 @@ void main() {
   });
 
   test('401 anlaşılır mesaja çevrilir', () async {
-    final repo = _repo(_StubAdapter(401, {'title': 'Yetkisiz', 'status': 401}));
+    final repo = _repo(
+      _StubAdapter(401, {'message': 'E-posta veya şifre hatalı.'}),
+    );
 
     await expectLater(
       repo.login(email: 'a@b.c', password: 'x'),
@@ -80,14 +86,69 @@ void main() {
     );
   });
 
-  test('400 ProblemDetails içindeki ilk alan hatası gösterilir', () async {
+  test('kayıt yanıtında kullanıcı nesnesi beklenmez', () async {
+    final adapter = _StubAdapter(201, {
+      'message': 'Kullanıcı oluşturuldu.',
+      'userId': 'abc',
+      'role': 'Öğrenci',
+    });
+
+    await _repo(adapter).register(
+      fullName: 'Deneme Öğrenci',
+      email: 'a@b.c',
+      password: 'Test1234!',
+    );
+
+    expect(adapter.lastRequest?.path, '/api/auth/register');
+  });
+
+  test('kayıtlı e-posta için dönen düz metin gösterilir', () async {
+    final repo = _repo(_StubAdapter(400, 'Bu e-posta zaten kayıtlı.'));
+
+    await expectLater(
+      repo.register(fullName: 'A', email: 'a@b.c', password: 'Test1234!'),
+      throwsA(
+        isA<AuthException>().having(
+          (e) => e.message,
+          'message',
+          'Bu e-posta zaten kayıtlı.',
+        ),
+      ),
+    );
+  });
+
+  test('Identity parola hatası Türkçeye çevrilir', () async {
+    final repo = _repo(
+      _StubAdapter(400, [
+        {
+          'code': 'PasswordRequiresUpper',
+          'description':
+              "Passwords must have at least one uppercase ('A'-'Z').",
+        },
+      ]),
+    );
+
+    await expectLater(
+      repo.register(fullName: 'A', email: 'a@b.c', password: 'test1234!'),
+      throwsA(
+        isA<AuthException>().having(
+          (e) => e.message,
+          'message',
+          'Parola en az bir büyük harf içermelidir.',
+        ),
+      ),
+    );
+  });
+
+  test('ProblemDetails alan hatası Türkçe gösterilir', () async {
     final repo = _repo(
       _StubAdapter(400, {
-        'title': 'Doğrulama hatası',
+        'title': 'One or more validation errors occurred.',
         'status': 400,
-        'detail': 'Gönderilen bilgiler geçerli değil.',
         'errors': {
-          'password': ['Parola en az 8 karakter olmalıdır.'],
+          'Password': [
+            "The field Password must be a string or array type with a minimum length of '8'.",
+          ],
         },
       }),
     );
@@ -108,7 +169,7 @@ void main() {
     final repo = _repo(_StubAdapter(409, {'title': 'Çakışma', 'status': 409}));
 
     await expectLater(
-      repo.register(fullName: 'A', email: 'a@b.c', password: '12345678'),
+      repo.register(fullName: 'A', email: 'a@b.c', password: 'Test1234!'),
       throwsA(
         isA<AuthException>().having(
           (e) => e.message,
