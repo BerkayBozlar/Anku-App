@@ -9,7 +9,7 @@ class AppConfig {
   /// 5098, AnkuApp.Api'nin `http` profilindeki porttur.
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:5098',
+    defaultValue: 'http://10.0.2.2:5080',
   );
 
   static const Duration connectTimeout = Duration(seconds: 5);
