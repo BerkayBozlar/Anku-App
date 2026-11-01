@@ -47,7 +47,8 @@ public class AccountController(AuthApiClient authApi) : Controller
         }
 
         var login = result.Response;
-        if (!Roles.CanUsePortal(login.User.Role))
+        var role = login.User.PortalRole;
+        if (role is null || !Roles.CanUsePortal(role))
         {
             ModelState.AddModelError(string.Empty,
                 "Bu portal yalnızca yönetici ve kulüp yetkilileri içindir. Öğrenciler AnküApp mobil uygulamasını kullanabilir.");
@@ -59,7 +60,7 @@ public class AccountController(AuthApiClient authApi) : Controller
             new(ClaimTypes.NameIdentifier, login.User.Id),
             new(ClaimTypes.Name, login.User.FullName),
             new(ClaimTypes.Email, login.User.Email),
-            new(ClaimTypes.Role, login.User.Role)
+            new(ClaimTypes.Role, role)
         };
         var principal = new ClaimsPrincipal(
             new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme));

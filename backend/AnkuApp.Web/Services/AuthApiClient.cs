@@ -4,7 +4,14 @@ using System.Text.Json;
 
 namespace AnkuApp.Web.Services;
 
-public record ApiUser(string Id, string FullName, string Email, string Role);
+/// <summary>
+/// API kullanıcının rollerini <c>roles</c> dizisiyle döndürür; tekil <c>role</c> alanı da okunur.
+/// </summary>
+public record ApiUser(string Id, string FullName, string Email, string? Role = null, string[]? Roles = null)
+{
+    /// <summary>En yetkili rolün portal sabiti (<see cref="Auth.Roles"/>); tanınan rol yoksa null.</summary>
+    public string? PortalRole => Auth.Roles.Primary([.. Roles ?? [], Role]);
+}
 
 public record LoginResponse(string AccessToken, DateTimeOffset ExpiresAt, ApiUser User);
 
@@ -67,7 +74,21 @@ public class AuthApiClient(HttpClient http, ILogger<AuthApiClient> logger)
         try
         {
             using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
-            return doc.RootElement.TryGetProperty("detail", out var detail) ? detail.GetString() : null;
+            if (doc.RootElement.ValueKind != JsonValueKind.Object)
+            {
+                return null;
+            }
+
+            // ProblemDetails "detail", API'nin kendi hata gövdeleri "message" kullanır
+            foreach (var name in (string[])["detail", "message"])
+            {
+                if (doc.RootElement.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String)
+                {
+                    return value.GetString();
+                }
+            }
+
+            return null;
         }
         catch (JsonException)
         {
