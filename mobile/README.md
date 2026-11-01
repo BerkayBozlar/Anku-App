@@ -34,6 +34,13 @@ flutter run --dart-define=API_BASE_URL=http://192.168.1.20:5098
 
 Ana sayfadaki "API bağlantısı" kartı `/api/health` sonucunu gösterir; yenile düğmesiyle tekrar denenir.
 
+## Giriş ve roller
+
+- Giriş `POST /api/auth/login`, öğrenci kaydı `POST /api/auth/register` ile yapılır (`docs/api-sozlesmesi.md`).
+- Dönen oturum (JWT, bitiş zamanı, kullanıcı) `flutter_secure_storage` ile cihazda şifreli saklanır; uygulama yeniden açılınca oturum devam eder, süresi dolmuşsa silinir.
+- Her API isteğine `Authorization: Bearer <token>` eklenir; API 401 dönerse oturum kapatılıp giriş ekranına dönülür.
+- Sekmeler role göre gösterilir: herkes Ana Sayfa, Harita, Profil; **Yönetim** sekmesi yalnızca `Yonetici` rolüne açıktır (doğrudan `/admin` adresine gitmek de engellenir).
+
 ## Klasör yapısı
 
 ```
