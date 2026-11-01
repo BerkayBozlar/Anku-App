@@ -17,10 +17,6 @@ html {
   min-height: 100%;
 }
 
-body {
-  margin-bottom: 60px;
-}
-
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
   color: var(--bs-secondary-color);
   text-align: end;
@@ -28,4 +24,34 @@ body {
 
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
   text-align: start;
+}
+/* AnküApp renkleri (Ankara Üniversitesi lacivert) */
+:root {
+  --anku-primary: #0b3d91;
+  --anku-primary-dark: #082c6a;
+}
+
+.bg-anku {
+  background-color: var(--anku-primary);
+}
+
+.btn-anku {
+  color: #fff;
+  background-color: var(--anku-primary);
+  border-color: var(--anku-primary);
+}
+
+.btn-anku:hover,
+.btn-anku:focus {
+  color: #fff;
+  background-color: var(--anku-primary-dark);
+  border-color: var(--anku-primary-dark);
+}
+
+.navbar .nav-link {
+  white-space: nowrap;
+}
+
+.navbar .nav-link.disabled .badge {
+  font-weight: 400;
 }
