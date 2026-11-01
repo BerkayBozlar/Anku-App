@@ -1,10 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../features/auth/session_controller.dart';
 import '../config/app_config.dart';
 
 /// AnkuApp.Api ile konuşan tek dio örneği.
-/// Giriş eklendiğinde JWT interceptor'ı buraya eklenecek.
 final dioProvider = Provider<Dio>((ref) {
   final dio = Dio(
     BaseOptions(
@@ -14,6 +14,27 @@ final dioProvider = Provider<Dio>((ref) {
       headers: {'Accept': 'application/json'},
     ),
   );
+
+  dio.interceptors.add(
+    InterceptorsWrapper(
+      onRequest: (options, handler) {
+        final token = ref.read(sessionProvider).value?.accessToken;
+        if (token != null) {
+          options.headers['Authorization'] = 'Bearer $token';
+        }
+        handler.next(options);
+      },
+      onError: (error, handler) {
+        // Süresi dolmuş ya da geçersiz token: oturumu kapat, giriş ekranına dönülür
+        final isAuthCall = error.requestOptions.path.startsWith('/api/auth/');
+        if (error.response?.statusCode == 401 && !isAuthCall) {
+          ref.read(sessionProvider.notifier).logout();
+        }
+        handler.next(error);
+      },
+    ),
+  );
+
   ref.onDispose(dio.close);
   return dio;
 });

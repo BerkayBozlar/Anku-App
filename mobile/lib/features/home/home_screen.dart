@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../auth/session_controller.dart';
 import '../health/api_health_card.dart';
 
 class _Module {
@@ -38,7 +40,11 @@ class HomeScreen extends StatelessWidget {
           return CustomScrollView(
             slivers: [
               const SliverPadding(
-                padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+                sliver: SliverToBoxAdapter(child: _Greeting()),
+              ),
+              const SliverPadding(
+                padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
                 sliver: SliverToBoxAdapter(child: ApiHealthCard()),
               ),
               SliverPadding(
@@ -68,6 +74,30 @@ class HomeScreen extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+class _Greeting extends ConsumerWidget {
+  const _Greeting();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(sessionProvider).value?.user;
+    if (user == null) return const SizedBox.shrink();
+
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Merhaba, ${user.firstName}', style: theme.textTheme.titleLarge),
+        Text(
+          user.role.label,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
     );
   }
 }

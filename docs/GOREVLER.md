@@ -53,9 +53,9 @@ Belgelerde kesin olan tarihler: başlangıç **21 Ekim**, ilk video ve iskelet *
 - [ ] **B** Npgsql + EF Core, `AppDbContext`, Users/Clubs/Events/EventParticipants/Announcements/CampusLocations varlıkları, ilk migration
 - [ ] **B** ASP.NET Core Identity (`ApplicationUser`), 3 rolün seed'i, örnek yönetici/kulüp yetkilisi/öğrenci hesapları
 - [ ] **B** API'de JWT üretimi: `POST /api/auth/login` (+ gerekiyorsa `register`), rol claim'leri
-- [ ] **Y** MVC'de Identity ile giriş/çıkış, Yönetici ve Kulüp Yetkilisi için rol bazlı menü, responsive ana düzen (`_Layout`)
-- [ ] **Y** Flutter giriş ekranı, token'ı flutter_secure_storage'da saklama, dio interceptor ile `Authorization` başlığı
-- [ ] **Y** go_router ile rol bazlı gezinme (Öğrenci / Kulüp Yetkilisi / Yönetici), riverpod ile oturum durumu
+- [x] **Y** MVC'de giriş/çıkış (API'nin `/api/auth/login` uç noktası + cookie oturumu), Yönetici ve Kulüp Yetkilisi için rol bazlı menü, responsive ana düzen (`_Layout`)
+- [x] **Y** Flutter giriş ve öğrenci kayıt ekranı, token'ı flutter_secure_storage'da saklama, dio interceptor ile `Authorization` başlığı (401'de oturum kapanır)
+- [x] **Y** go_router ile rol bazlı gezinme (Yönetim sekmesi yalnız Yönetici), riverpod ile oturum durumu, profil ve çıkış
 - [ ] **B+Y** Karşılıklı kod inceleme (her PR'ı diğeri onaylasın)
 
 > İki belge bu haftayı farklı bölüyor (Flutter belgesi Identity'yi B'ye, Web belgesi "giriş, roller"i Y'ye veriyor). Yukarıdaki bölüşüm bir öneri: Identity/JWT altyapısı B, MVC ve Flutter giriş arayüzleri Y. Kendi aranızda netleştirin.

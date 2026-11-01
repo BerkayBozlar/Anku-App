@@ -1,4 +1,5 @@
 import 'package:anku_app/core/network/api_client.dart';
+import 'package:anku_app/features/auth/session_storage.dart';
 import 'package:anku_app/features/health/api_health.dart';
 import 'package:anku_app/features/home/home_screen.dart';
 import 'package:dio/dio.dart';
@@ -7,9 +8,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 
+import 'test_helpers.dart';
+
 Widget _wrap(Override healthOverride) {
   return ProviderScope(
-    overrides: [healthOverride],
+    overrides: [
+      healthOverride,
+      sessionStorageProvider.overrideWithValue(MemorySessionStorage()),
+    ],
     child: const MaterialApp(home: HomeScreen()),
   );
 }
