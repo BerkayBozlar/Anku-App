@@ -85,6 +85,89 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+
+    var userManager = scope.ServiceProvider
+        .GetRequiredService<UserManager<ApplicationUser>>();
+
+    var testAccounts = new[]
+    {
+        new
+        {
+            Email = "admin@ankuapp.test",
+            FullName = "Test Yönetici",
+            Role = "Yönetici",
+            PasswordKey = "Seed:AdminPassword"
+        },
+        new
+        {
+            Email = "kulup@ankuapp.test",
+            FullName = "Test Kulüp Yetkilisi",
+            Role = "Kulüp Yetkilisi",
+            PasswordKey = "Seed:ClubPassword"
+        }
+    };
+
+    foreach (var account in testAccounts)
+    {
+        var password = app.Configuration[account.PasswordKey];
+
+        if (string.IsNullOrWhiteSpace(password))
+        {
+            Console.WriteLine(
+                $"Test hesabı atlandı: {account.Email}");
+            continue;
+        }
+
+        var existingUser =
+            await userManager.FindByEmailAsync(account.Email);
+
+        if (existingUser != null)
+        {
+            if (!await userManager.IsInRoleAsync(
+                existingUser, account.Role))
+            {
+                throw new InvalidOperationException(
+                    $"{account.Email} zaten kayıtlı fakat beklenen role sahip değil.");
+            }
+
+            continue;
+        }
+
+        var user = new ApplicationUser
+        {
+            UserName = account.Email,
+            Email = account.Email,
+            FullName = account.FullName
+        };
+
+        var createResult =
+            await userManager.CreateAsync(user, password);
+
+        if (!createResult.Succeeded)
+        {
+            throw new InvalidOperationException(
+                string.Join("; ",
+                    createResult.Errors.Select(e => e.Description)));
+        }
+
+        var roleResult =
+            await userManager.AddToRoleAsync(user, account.Role);
+
+        if (!roleResult.Succeeded)
+        {
+            throw new InvalidOperationException(
+                string.Join("; ",
+                    roleResult.Errors.Select(e => e.Description)));
+        }
+
+        Console.WriteLine(
+            $"Test hesabı oluşturuldu: {account.Email}");
+    }
+}
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

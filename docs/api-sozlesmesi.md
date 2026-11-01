@@ -1,155 +1,125 @@
-# AnküApp İlk API Sözleşmesi
+AnküApp API Sözleşmesi
+Durum: 2. hafta backend uygulamasına göre güncellenmiştir (1 Kasım 2026).
+Kapsam: ASP.NET Core Web API ile Flutter ve MVC istemcilerinin veri alışverişi.
+Kaynak ayrımı: Kimlik doğrulama ve sağlık kontrolü bölümleri şu anda yazılmış ve yerel ortamda test edilmiş endpoint'leri; Etkinlikler bölümü ise 3. hafta için planlanan, henüz uygulanmamış sözleşmeyi gösterir.
+Temel adresler ve ortak kurallar
+- API'nin mevcut yerel çalıştırma adresi: http://localhost:5080
+- API ile aynı bilgisayarda çalışan standart Android emülatörünün ana makine adresi: http://10.0.2.2:5080
+- Bu adresler geliştirme ortamı içindir; Yiğithan'ın başka bir bilgisayarından 10.0.2.2 ile Berkay'ın bilgisayarına erişilemez. Diğer bilgisayarda API'yi ayrı çalıştırmak veya erişilebilir bir ağ adresi yapılandırmak gerekir.
+- İstek/yanıt gövdelerinde temel içerik türü: application/json (hata gövdelerinde farklı içerik türleri görülebilir).
+- Tarih ve saatler: ISO 8601; üretilen JWT bitiş zamanı UTC'dir (örnek: 2026-11-01T20:00:00Z).
+- JSON özellik adları camelCase biçimindedir.
+- Gerçek Identity rol adları, Türkçe karakter ve boşluklar korunarak, Yönetici, Kulüp Yetkilisi, Öğrenci biçimindedir. Mobil tarafta karşılaştırma yaparken bu değerler kullanılmalıdır.
+Kimlik doğrulaması gerektiren isteklerde:
+Authorization: Bearer <accessToken>
+Yerel Android HTTP çağrılarında emülatörün ağ izinleri / cleartext HTTP politikası ayrıca yapılandırılabilir. Dağıtım ortamında HTTPS kullanılmalıdır.
+Hata yanıtları (mevcut uygulama)
+Önemli: İlk taslakta tüm hataların ProblemDetails döndüreceği varsayılmıştı. Mevcut AuthController henüz ortak bir hata formatı uygulamıyor. İstemci bu nedenle yalnızca tek bir hata gövdesine güvenmemelidir.
+Durum	Şu anki davranış
+Eksik / geçersiz RegisterRequest veya LoginRequest alanları	400 Bad Request – [ApiController] model doğrulaması; tipik olarak ValidationProblemDetails ve errors alanı
+Zaten kayıtlı e-posta (register)	400 Bad Request – "Bu e-posta zaten kayıtlı." mesajı; henüz 409 değil
+Identity parola kuralları vb. (register)	400 Bad Request – Identity hata nesneleri dizisi (code, description)
+Hatalı e-posta/şifre (login)	401 Unauthorized – { "message": "E-posta veya şifre hatalı." }
+Geçerli JWT olmadan korumalı endpoint	401 Unauthorized
+JWT geçerli fakat rol / yetki yetersiz	403 Forbidden
+Kayıttan sonra rol ataması başarısız	500 Internal Server Error – "Rol atanamadı."
 
-Bu belge, Flutter mobil uygulaması ile ASP.NET Core Web API arasındaki ilk uç nokta sözleşmesini tanımlar. Birinci hafta için kimlik doğrulama ve etkinlik akışlarının beklenen istek ve yanıt yapıları belirlenmiştir. Uç noktalar ikinci ve üçüncü haftalarda uygulanırken bu sözleşme esas alınacak, ihtiyaç hâlinde geriye dönük uyumluluk gözetilerek güncellenecektir.
 
-## Temel adresler
-
-- Bilgisayarda: `http://localhost:5098`
-- Android emülatöründe: `http://10.0.2.2:5098`
-- İçerik türü: `application/json`
-- Tarih ve saatler: ISO 8601, UTC (`2026-11-18T10:30:00Z`)
-
-Kimlik doğrulama gerektiren isteklerde JWT şu başlıkla gönderilir:
-
-```http
-Authorization: Bearer <token>
-```
-
-Roller `Yonetici`, `KulupYetkilisi` ve `Ogrenci` olarak taşınır. API yanıt alanları JSON içinde `camelCase` biçimindedir.
-
-## Ortak hata yanıtı
-
-Doğrulama ve iş kuralı hataları ASP.NET Core `ProblemDetails` biçiminde döner.
-
-```json
+Eksik veya geçersiz alanların hata gövdesine örnek (alan isimleri doğrulanan isteğe bağlıdır):
 {
-  "type": "https://httpstatuses.com/400",
-  "title": "Doğrulama hatası",
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "One or more validation errors occurred.",
   "status": 400,
-  "detail": "Gönderilen bilgiler geçerli değil.",
   "errors": {
-    "title": ["Başlık zorunludur."]
+    "Email": ["The Email field is required."]
   }
 }
-```
+Bu örnek, doğrulama hatasının biçimini gösterir; type, metin ve alan adları çalışma ortamına / doğrulamaya göre farklı olabilir. İlerleyen aşamada ortak hata biçimi standartlaştırılabilir.
 
-Temel durum kodları:
+Sağlık kontrolü — UYGULANDI
+GET /api/health
+API'nin çalıştığını doğrular. JWT gerektirmez.
 
-| Kod | Anlamı |
-|---|---|
-| `200 OK` | İstek başarıyla tamamlandı |
-| `201 Created` | Yeni kayıt oluşturuldu |
-| `204 No Content` | Güncelleme veya silme tamamlandı |
-| `400 Bad Request` | Doğrulama ya da iş kuralı hatası |
-| `401 Unauthorized` | Token yok, geçersiz veya süresi dolmuş |
-| `403 Forbidden` | Kullanıcının işlem için rolü veya sahipliği uygun değil |
-| `404 Not Found` | İstenen kayıt bulunamadı |
-| `409 Conflict` | Aynı kayıt ya da çakışan işlem mevcut |
-
-## Sağlık kontrolü
-
-### `GET /api/health`
-
-API'nin çalıştığını doğrular. Kimlik doğrulama gerektirmez.
-
-Başarılı yanıt - `200 OK`:
-
-```json
+Başarılı yanıt — 200 OK:
 {
   "status": "ok",
   "application": "AnkuApp.Api"
 }
-```
-
-## Kimlik doğrulama
-
-### `POST /api/auth/login`
-
-Kullanıcıyı e-posta ve parola ile doğrular, rol bilgisi içeren JWT üretir.
+Kimlik doğrulama — UYGULANDI
+POST /api/auth/register
+Yeni kullanıcı oluşturur. Dışarıdan kayıt olan herkes Öğrenci rolünü alır; istekte yönetici veya kulüp yetkilisi rolü seçilemez.
 
 İstek:
-
-```json
 {
-  "email": "ogrenci@ankara.edu.tr",
-  "password": "OrnekParola123!"
+  "fullName": "Örnek Öğrenci",
+  "email": "ogrenci.test@example.com",
+  "password": "Test1234!"
 }
-```
+Başarılı yanıt — 201 Created (gerçek alan adları):
+{
+  "message": "Kullanıcı oluşturuldu.",
+  "userId": "8c781f34-6a32-4ddb-b72d-62f68c17b964",
+  "role": "Öğrenci"
+}
+Notlar:
+- fullName, email, password gereklidir; e-posta biçimi doğrulanır.
+- Parola en az 8 karakter olmalı ve mevcut Identity ayarlarına uygun büyük/küçük harf, rakam, özel karakter kurallarını sağlamalıdır.
+- Kullanıcı AspNetUsers, rol ilişkisi AspNetUserRoles içine yazılır; parola düz metin saklanmaz.
+- Başarılı kayıt JWT döndürmez. Giriş için ayrıca /api/auth/login çağrılmalıdır.
+- Aynı e-posta tekrar kullanılırsa mevcut kod 400 verir; bu aşamada 409 Conflict beklenmemelidir.
+POST /api/auth/login
+Kullanıcıyı e-posta ve parola ile doğrular, rol bilgisi içeren 2 saat geçerli JWT üretir.
 
-Başarılı yanıt - `200 OK`:
-
-```json
+İstek:
+{
+  "email": "ogrenci.test@example.com",
+  "password": "Test1234!"
+}
+Başarılı yanıt — 200 OK (örnek değerler):
 {
   "accessToken": "eyJhbGciOiJIUzI1NiIs...",
-  "expiresAt": "2026-10-26T18:30:00Z",
+  "expiresAt": "2026-11-01T20:00:00Z",
   "user": {
     "id": "8c781f34-6a32-4ddb-b72d-62f68c17b964",
     "fullName": "Örnek Öğrenci",
-    "email": "ogrenci@ankara.edu.tr",
-    "role": "Ogrenci"
+    "email": "ogrenci.test@example.com",
+    "roles": ["Öğrenci"]
   }
 }
-```
+Kritik: user.role adlı tekil alan yoktur; Flutter ve MVC istemcileri user.roles dizisini okumalıdır. Yetkilendirme sadece istemcideki yönlendirmeye bırakılmamalı, API'de de [Authorize] / rol kontrolleriyle korunmalıdır.
 
-Hatalar:
+Hatalar: eksik/geçersiz alanlarda 400; yanlış e-posta veya parolada 401.
+GET /api/auth/me
+Zorunlu JWT: Authorization: Bearer <accessToken>.
 
-- `400 Bad Request`: E-posta veya parola alanı eksik.
-- `401 Unauthorized`: E-posta ya da parola yanlış.
-
-### `POST /api/auth/register`
-
-Öğrenci hesabı oluşturur. İlk sürümde yalnızca `Ogrenci` rolüyle kayıt açılır; yönetici ve kulüp yetkilisi rolleri sistem tarafından atanır.
-
-İstek:
-
-```json
+Başarılı yanıt — 200 OK:
 {
-  "fullName": "Örnek Öğrenci",
-  "email": "ogrenci@ankara.edu.tr",
-  "password": "OrnekParola123!"
+  "userId": "8c781f34-6a32-4ddb-b72d-62f68c17b964",
+  "email": "ogrenci.test@example.com",
+  "roles": ["Öğrenci"]
 }
-```
+Geçerli token olmadan istek 401 Unauthorized döner. Bu endpoint'te fullName bulunmaz.
+Geliştirme ortamı test hesapları
+- admin@ankuapp.test: Yönetici
+- kulup@ankuapp.test: Kulüp Yetkilisi
+- ogrenci.test@example.com: Öğrenci (elle kayıt testi sırasında oluşturulduysa)
+İlk iki hesap yalnızca geliştirme ortamında seed işlemiyle oluşturulur. Şifreleri yerel User Secrets içinde Seed:AdminPassword ve Seed:ClubPassword olarak saklanır; GitHub'a, belgeye veya koda yazılmamalıdır. Girişleri normal /api/auth/login üzerinden yapılır.
 
-Başarılı yanıt - `201 Created`:
-
-```json
-{
-  "id": "8c781f34-6a32-4ddb-b72d-62f68c17b964",
-  "fullName": "Örnek Öğrenci",
-  "email": "ogrenci@ankara.edu.tr",
-  "role": "Ogrenci"
-}
-```
-
-Hatalar:
-
-- `400 Bad Request`: Alanlar geçersiz veya parola kurallarını karşılamıyor.
-- `409 Conflict`: E-posta adresi daha önce kullanılmış.
-
-## Etkinlikler
-
-Etkinlik durumları `Draft`, `Published` ve `Cancelled` değerlerinden biridir.
+Entegrasyon notu: API'nin çalışması MVC portalında girişin otomatik olarak tamamlandığı anlamına gelmez; MVC tarafının bu kullanıcıları aynı Identity altyapısıyla doğrulayabildiği ayrıca test edilmelidir. Flutter JWT'yi güvenli biçimde saklamalıdır.
+Etkinlikler — 3. HAFTA İÇİN PLANLANAN SÖZLEŞME (HENÜZ UYGULANMADI)
+Etkinlik durumları Draft, Published ve Cancelled değerlerinden biridir.
 
 Yetkilendirme kuralları:
-
-- `Ogrenci`: Etkinlik listesini ve ayrıntısını görüntüler.
-- `KulupYetkilisi`: Görüntüler; yalnızca yetkilisi olduğu kulübün etkinliklerini oluşturur, günceller ve siler.
-- `Yonetici`: Tüm etkinliklerde görüntüleme ve yönetim işlemlerini yapar.
-- Flutter'daki ilk yönetim arayüzü yalnızca `Yonetici` rolüne açılır. Kulüp yetkilisinin yönetim akışı MVC portalında sunulur.
-
-### `GET /api/events`
-
+- Öğrenci: Etkinlik listesini ve ayrıntısını görüntüler.
+- Kulüp Yetkilisi: Görüntüler; yalnızca yetkilisi olduğu kulübün etkinliklerini oluşturur, günceller ve siler.
+- Yönetici: Tüm etkinliklerde görüntüleme ve yönetim işlemlerini yapar.
+- Flutter'daki ilk yönetim arayüzü yalnızca Yönetici rolüne açılır. Kulüp yetkilisinin yönetim akışı MVC portalında sunulur.
+GET /api/events
 Etkinlikleri filtreli ve sayfalı olarak listeler.
 
 Örnek istek:
-
-```http
 GET /api/events?page=1&pageSize=20&search=konser&clubId=12&from=2026-11-01T00:00:00Z
-```
-
-Başarılı yanıt - `200 OK`:
-
-```json
+Başarılı yanıt - 200 OK:
 {
   "items": [
     {
@@ -168,15 +138,10 @@ Başarılı yanıt - `200 OK`:
   "pageSize": 20,
   "totalCount": 1
 }
-```
-
-### `GET /api/events/{id}`
-
+GET /api/events/{id}
 Tek etkinliğin ayrıntısını döndürür.
 
-Başarılı yanıt - `200 OK`:
-
-```json
+Başarılı yanıt - 200 OK:
 {
   "id": 45,
   "clubId": 12,
@@ -189,17 +154,11 @@ Başarılı yanıt - `200 OK`:
   "capacity": 250,
   "status": "Published"
 }
-```
-
-Hata: Etkinlik yoksa `404 Not Found`.
-
-### `POST /api/events`
-
-Yeni etkinlik oluşturur. `Yonetici` veya ilgili kulübün `KulupYetkilisi` rolü gerekir.
+Hata: Etkinlik yoksa 404 Not Found.
+POST /api/events
+Yeni etkinlik oluşturur. Yönetici veya ilgili kulübün Kulüp Yetkilisi rolü gerekir.
 
 İstek:
-
-```json
 {
   "clubId": 12,
   "campusLocationId": 3,
@@ -209,11 +168,7 @@ Yeni etkinlik oluşturur. `Yonetici` veya ilgili kulübün `KulupYetkilisi` rol�
   "capacity": 250,
   "status": "Published"
 }
-```
-
-Başarılı yanıt - `201 Created`:
-
-```json
+Başarılı yanıt - 201 Created:
 {
   "id": 45,
   "clubId": 12,
@@ -224,43 +179,33 @@ Başarılı yanıt - `201 Created`:
   "capacity": 250,
   "status": "Published"
 }
-```
-
 Doğrulamalar:
+- title zorunludur ve en fazla 200 karakterdir.
+- eventDate geçmişte olamaz.
+- capacity sıfırdan büyük olmalıdır.
+- clubId mevcut olmalıdır.
+- campusLocationId verildiyse mevcut olmalıdır.
+PUT /api/events/{id}
+Var olan etkinliği günceller. Yetkilendirme ve istek alanları POST /api/events ile aynıdır.
 
-- `title` zorunludur ve en fazla 200 karakterdir.
-- `eventDate` geçmişte olamaz.
-- `capacity` sıfırdan büyük olmalıdır.
-- `clubId` mevcut olmalıdır.
-- `campusLocationId` verildiyse mevcut olmalıdır.
-
-### `PUT /api/events/{id}`
-
-Var olan etkinliği günceller. Yetkilendirme ve istek alanları `POST /api/events` ile aynıdır.
-
-Başarılı yanıt: `204 No Content`.
+Başarılı yanıt: 204 No Content.
 
 Hatalar:
+- 400 Bad Request: Doğrulama hatası.
+- 403 Forbidden: Kulüp yetkilisi başka kulübün etkinliğini değiştirmeye çalıştı.
+- 404 Not Found: Etkinlik bulunamadı.
+DELETE /api/events/{id}
+Etkinliği siler. Yönetici veya ilgili kulübün Kulüp Yetkilisi rolü gerekir.
 
-- `400 Bad Request`: Doğrulama hatası.
-- `403 Forbidden`: Kulüp yetkilisi başka kulübün etkinliğini değiştirmeye çalıştı.
-- `404 Not Found`: Etkinlik bulunamadı.
-
-### `DELETE /api/events/{id}`
-
-Etkinliği siler. `Yonetici` veya ilgili kulübün `KulupYetkilisi` rolü gerekir.
-
-Başarılı yanıt: `204 No Content`.
+Başarılı yanıt: 204 No Content.
 
 Hatalar:
-
-- `403 Forbidden`: Kullanıcının silme yetkisi yok.
-- `404 Not Found`: Etkinlik bulunamadı.
-- `409 Conflict`: Etkinlik ilişkili başvurular nedeniyle doğrudan silinemiyor.
-
-## Uygulama sırası
-
-1. İkinci hafta Identity kullanıcıları, roller, JWT ayarları ve `POST /api/auth/login` uygulanır.
-2. Üçüncü hafta Events varlığı, DTO'lar, doğrulamalar ve tam CRUD uç noktaları uygulanır.
-3. Swagger/OpenAPI üzerinde durum kodları ve örnek gövdeler doğrulanır.
-4. Flutter istemcisi bu sözleşmeye göre giriş ve etkinlik akışlarına bağlanır.
+- 403 Forbidden: Kullanıcının silme yetkisi yok.
+- 404 Not Found: Etkinlik bulunamadı.
+- 409 Conflict: Etkinlik ilişkili başvurular nedeniyle doğrudan silinemiyor.
+Uygulama ve entegrasyon sırası
+1. 2. hafta — yapıldı: PostgreSQL/Identity, roller, register, login, me, JWT doğrulama ve temel yetki testleri.
+2. 2. hafta — entegrasyon testi bekliyor: Flutter/MVC istemcilerinde gerçek API'ye karşı oturum açma ve rol bazlı ekranlar; geliştirici makinelerinde veritabanı / User Secrets kurulumu veya uygun ağ erişimi.
+3. 3. hafta — plan: Events modeli, ilişkiler, DTO'lar, doğrulamalar ve GET/POST/PUT/DELETE endpoint'leri.
+4. Plan: Swagger/OpenAPI üzerinden uç noktaları ve yanıt kodlarını doğrulama; Flutter yönetim ekranlarında Events CRUD işlemlerini test etme.
+Yeni endpoint veya yanıt biçimi eklendiğinde belge gerçek Controllers ve DTO koduyla birlikte güncellenmelidir.
