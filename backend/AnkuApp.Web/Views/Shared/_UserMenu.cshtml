@@ -1,0 +1,23 @@
+@using System.Security.Claims
+@using AnkuApp.Web.Auth
+@{
+    var role = User.FindFirstValue(ClaimTypes.Role);
+}
+
+<ul class="navbar-nav">
+    <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            @User.Identity?.Name
+            <span class="badge rounded-pill text-bg-light ms-1">@Roles.DisplayName(role)</span>
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end">
+            <li><span class="dropdown-item-text small text-muted">@User.FindFirstValue(ClaimTypes.Email)</span></li>
+            <li><hr class="dropdown-divider" /></li>
+            <li>
+                <form asp-controller="Account" asp-action="Logout" method="post" class="m-0">
+                    <button type="submit" class="dropdown-item">Çıkış yap</button>
+                </form>
+            </li>
+        </ul>
+    </li>
+</ul>
