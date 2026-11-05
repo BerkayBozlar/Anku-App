@@ -3,18 +3,19 @@
 @{
     ViewData["Title"] = "Panel";
     var isAdmin = User.IsInRole(Roles.Yonetici);
+    // (başlık, açıklama, controller, action); controller null ise "yakında"
     var cards = isAdmin
-        ? new[]
+        ? new (string Title, string Description, string? Controller, string? Action)[]
         {
-            ("Kulüpler", "Kulüpleri ve kulüp yetkililerini yönetin."),
-            ("Etkinlikler", "Tüm kulüplerin etkinliklerini ekleyin, düzenleyin, silin."),
-            ("Duyurular", "Resmî kaynaktan gelen duyuruları kontrol edin, elle duyuru ekleyin."),
-            ("Kullanıcılar", "Kullanıcıları ve rollerini görüntüleyin.")
+            ("Kulüpler", "Kulüpleri ve kulüp yetkililerini yönetin.", "Clubs", "Index"),
+            ("Etkinlikler", "Tüm kulüplerin etkinliklerini ekleyin, düzenleyin, silin.", "Events", "Index"),
+            ("Duyurular", "Resmî kaynaktan gelen duyuruları kontrol edin, elle duyuru ekleyin.", null, null),
+            ("Kullanıcılar", "Kullanıcıları ve rollerini görüntüleyin.", null, null)
         }
-        : new[]
+        : new (string Title, string Description, string? Controller, string? Action)[]
         {
-            ("Kulübüm", "Kulübünüzün bilgilerini ve sosyal bağlantılarını güncelleyin."),
-            ("Etkinliklerim", "Kulübünüzün etkinliklerini ekleyin, düzenleyin, silin.")
+            ("Kulübüm", "Kulübünüzün bilgilerini ve sosyal bağlantılarını güncelleyin.", "Clubs", "Mine"),
+            ("Etkinliklerim", "Kulübünüzün etkinliklerini ekleyin, düzenleyin, silin.", "Events", "Index")
         };
 }
 
@@ -26,16 +27,23 @@
 </div>
 
 <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3">
-    @foreach (var (title, description) in cards)
+    @foreach (var card in cards)
     {
         <div class="col">
             <div class="card h-100">
                 <div class="card-body">
                     <h2 class="h6 card-title d-flex justify-content-between align-items-center">
-                        @title
-                        <span class="badge text-bg-secondary">yakında</span>
+                        @if (card.Controller is null)
+                        {
+                            @card.Title
+                            <span class="badge text-bg-secondary">yakında</span>
+                        }
+                        else
+                        {
+                            <a class="stretched-link text-decoration-none" asp-controller="@card.Controller" asp-action="@card.Action">@card.Title</a>
+                        }
                     </h2>
-                    <p class="card-text small text-muted mb-0">@description</p>
+                    <p class="card-text small text-muted mb-0">@card.Description</p>
                 </div>
             </div>
         </div>

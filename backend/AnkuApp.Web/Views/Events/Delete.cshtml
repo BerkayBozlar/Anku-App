@@ -1,0 +1,36 @@
+@model EventDto
+@using AnkuApp.Web.Controllers
+@{
+    ViewData["Title"] = "Etkinliği sil";
+    var past = EventsController.IsPast(Model);
+    var returnUrl = ViewData[PortalController.ReturnUrlKey] as string;
+}
+
+<div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6">
+        <div class="card border-danger">
+            <div class="card-body p-4">
+                <h1 class="h4">Etkinliği sil</h1>
+                <dl class="row small mb-3">
+                    <dt class="col-4">Etkinlik</dt>
+                    <dd class="col-8">@Model.Title</dd>
+                    <dt class="col-4">Kulüp</dt>
+                    <dd class="col-8">@Model.ClubName</dd>
+                    <dt class="col-4">Tarih</dt>
+                    <dd class="col-8">@PortalTime.Format(Model.EventDate)</dd>
+                </dl>
+                <p class="mb-4">
+                    Bu işlem geri alınamaz. Başvurusu olan etkinlikler silinemez@(past ? "." : "; onları \"İptal edildi\" durumuna alabilirsiniz.")
+                </p>
+
+                <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="d-flex flex-column flex-sm-row gap-2 justify-content-end">
+                    <input type="hidden" name="clubId" value="@Model.ClubId" />
+                    <input type="hidden" name="past" value="@(past ? "true" : "false")" />
+                    <input type="hidden" name="returnUrl" value="@returnUrl" />
+                    <a class="btn btn-outline-secondary" href="@(returnUrl ?? Url.Action("Index", new { past = past ? "true" : null, clubId = Model.ClubId }))">Vazgeç</a>
+                    <button type="submit" class="btn btn-danger">Sil</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

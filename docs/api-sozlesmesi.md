@@ -106,6 +106,59 @@ Geliştirme ortamı test hesapları
 İlk iki hesap yalnızca geliştirme ortamında seed işlemiyle oluşturulur. Şifreleri yerel User Secrets içinde Seed:AdminPassword ve Seed:ClubPassword olarak saklanır; GitHub'a, belgeye veya koda yazılmamalıdır. Girişleri normal /api/auth/login üzerinden yapılır.
 
 Entegrasyon notu: API'nin çalışması MVC portalında girişin otomatik olarak tamamlandığı anlamına gelmez; MVC tarafının bu kullanıcıları aynı Identity altyapısıyla doğrulayabildiği ayrıca test edilmelidir. Flutter JWT'yi güvenli biçimde saklamalıdır.
+Kulüpler — UYGULANDI (3. hafta)
+Tüm uç noktalar JWT ister. MVC portalının kulüp yönetimi ve etkinlik formlarındaki kulüp seçimi bu uç noktaları kullanır.
+
+Yetkilendirme kuralları:
+- Giriş yapmış her kullanıcı: Kulüp listesini ve ayrıntısını görüntüler.
+- Kulüp Yetkilisi: Yalnızca yetkilisi olduğu kulübün adını, açıklamasını ve sosyal medya bağlantısını günceller; yetkili kullanıcıyı değiştiremez.
+- Yönetici: Kulüp ekler, günceller, siler ve kulübe yetkili atar.
+GET /api/clubs
+Kulüpleri ada göre sıralı listeler. mine=true verilirse yalnızca giriş yapan kullanıcının yetkilisi olduğu kulüpler döner.
+
+Örnek istek:
+GET /api/clubs?mine=true
+Başarılı yanıt - 200 OK:
+[
+  {
+    "id": 12,
+    "name": "Müzik Topluluğu",
+    "description": "Öğrenci müzik topluluğu.",
+    "socialMediaUrl": "https://instagram.com/ornek",
+    "authorizedUserName": "Test Kulüp Yetkilisi",
+    "authorizedUserEmail": "kulup@ankuapp.test"
+  }
+]
+authorizedUserEmail yalnızca Yönetici'ye döner; diğer rollerde null'dır. Yetkili atanmamışsa authorizedUserName ve authorizedUserEmail null'dır.
+GET /api/clubs/{id}
+Tek kulübün bilgisini aynı biçimde döndürür. Kulüp yoksa 404 Not Found.
+POST /api/clubs
+Yalnızca Yönetici. Yeni kulüp oluşturur.
+
+İstek:
+{
+  "name": "Müzik Topluluğu",
+  "description": "Öğrenci müzik topluluğu.",
+  "socialMediaUrl": "https://instagram.com/ornek",
+  "authorizedUserEmail": "kulup@ankuapp.test"
+}
+Başarılı yanıt: 201 Created, gövdede GET /api/clubs/{id} biçimindeki kulüp.
+
+Doğrulamalar:
+- name zorunludur, en fazla 100 karakterdir ve başka bir kulüple aynı olamaz (büyük/küçük harf duyarsız).
+- description en fazla 2000 karakterdir; socialMediaUrl verilirse http veya https ile başlayan mutlak bir bağlantı olmalı (javascript: vb. reddedilir), en fazla 300 karakterdir. Boş metin "yok" sayılır.
+- authorizedUserEmail isteğe bağlıdır; verilirse kayıtlı ve Kulüp Yetkilisi rolünde bir kullanıcıya ait olmalıdır. Boş/null verilirse kulübün yetkilisi kaldırılır.
+- Hatalar 400 ValidationProblemDetails olarak, errors içinde alan adıyla (Name, SocialMediaUrl, AuthorizedUserEmail) döner.
+PUT /api/clubs/{id}
+Yönetici veya kulübün kendi Kulüp Yetkilisi. İstek gövdesi POST ile aynıdır; Kulüp Yetkilisi gönderdiğinde authorizedUserEmail yok sayılır.
+
+Başarılı yanıt: 204 No Content. Hatalar: 400 doğrulama, 403 başka kulübü güncelleme, 404 kulüp yok.
+DELETE /api/clubs/{id}
+Yalnızca Yönetici. Başarılı yanıt: 204 No Content.
+
+Hatalar:
+- 404 Not Found: Kulüp bulunamadı.
+- 409 Conflict: Kulübe bağlı kayıtlar (ör. etkinlikler) olduğu için silinemiyor - { "message": "Kulübe bağlı kayıtlar olduğu için silinemiyor." }. Bunun için Events → Clubs yabancı anahtarı silmede Restrict olmalıdır; Cascade olursa kulüple birlikte etkinlikleri de silinir.
 Etkinlikler — 3. HAFTA İÇİN PLANLANAN SÖZLEŞME (HENÜZ UYGULANMADI)
 Etkinlik durumları Draft, Published ve Cancelled değerlerinden biridir.
 
@@ -119,6 +172,16 @@ Etkinlikleri filtreli ve sayfalı olarak listeler.
 
 Örnek istek:
 GET /api/events?page=1&pageSize=20&search=konser&clubId=12&from=2026-11-01T00:00:00Z
+
+Sorgu parametreleri (hepsi isteğe bağlı):
+- page (varsayılan 1), pageSize (varsayılan 20).
+- search: Başlıkta büyük/küçük harf duyarsız arama.
+- clubId: Yalnızca bu kulübün etkinlikleri.
+- from: eventDate >= from (UTC). Yaklaşan etkinlikler için from=şimdi.
+- to: eventDate < to (UTC). Geçmiş etkinlikler için to=şimdi.
+- order: asc (varsayılan, en yakın tarih önce) veya desc (en yeni tarih önce). Liste her zaman eventDate'e göre sıralanır; eşit tarihlerde id'ye göre.
+
+Portal ve mobil yönetim ekranları "Yaklaşan" sekmesi için from=<şimdi>&order=asc, "Geçmiş" sekmesi için to=<şimdi>&order=desc gönderir.
 Başarılı yanıt - 200 OK:
 {
   "items": [

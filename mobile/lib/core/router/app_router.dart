@@ -8,6 +8,8 @@ import '../../features/auth/login_screen.dart';
 import '../../features/auth/register_screen.dart';
 import '../../features/auth/session_controller.dart';
 import '../../features/auth/splash_screen.dart';
+import '../../features/events/admin_events_screen.dart';
+import '../../features/events/event_form_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/map/campus_map_screen.dart';
 import '../../features/profile/profile_screen.dart';
@@ -38,7 +40,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         branches: [
           for (final tab in _tabs)
             StatefulShellBranch(
-              routes: [GoRoute(path: tab.path, builder: tab.builder)],
+              routes: [
+                GoRoute(
+                  path: tab.path,
+                  builder: tab.builder,
+                  routes: tab.routes,
+                ),
+              ],
             ),
         ],
       ),
@@ -77,10 +85,14 @@ class _Tab {
     required this.selectedIcon,
     required this.label,
     this.roles,
+    this.routes = const [],
   });
 
   final String path;
   final GoRouterWidgetBuilder builder;
+
+  /// Sekmenin alt sayfaları; sekmenin rol kısıtı bunlara da uygulanır.
+  final List<RouteBase> routes;
   final IconData icon;
   final IconData selectedIcon;
   final String label;
@@ -113,6 +125,28 @@ final _tabs = <_Tab>[
     selectedIcon: Icons.admin_panel_settings,
     label: 'Yönetim',
     roles: {UserRole.yonetici},
+    routes: [
+      GoRoute(
+        path: 'events',
+        builder: (context, state) => const AdminEventsScreen(),
+        routes: [
+          GoRoute(
+            path: 'new',
+            builder: (context, state) => const EventFormScreen(),
+          ),
+          GoRoute(
+            path: ':id',
+            redirect: (context, state) =>
+                int.tryParse(state.pathParameters['id']!) == null
+                ? '/admin/events'
+                : null,
+            builder: (context, state) => EventFormScreen(
+              eventId: int.parse(state.pathParameters['id']!),
+            ),
+          ),
+        ],
+      ),
+    ],
   ),
   _Tab(
     path: '/profile',

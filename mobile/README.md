@@ -16,7 +16,7 @@ AnküApp'in öğrenci tarafı. Veriye yalnızca `backend/AnkuApp.Api` üzerinden
    dotnet run --project backend/AnkuApp.Api --launch-profile http
    ```
 
-   API `http://localhost:5098` adresinde açılır, `GET /api/health` → `{"status":"ok"}`.
+   API `http://localhost:5080` adresinde açılır, `GET /api/health` → `{"status":"ok"}`.
 
 2. Emülatörü aç, sonra uygulamayı çalıştır:
 
@@ -26,10 +26,10 @@ AnküApp'in öğrenci tarafı. Veriye yalnızca `backend/AnkuApp.Api` üzerinden
    flutter run
    ```
 
-Emülatör bilgisayarın `localhost`'una `10.0.2.2` üzerinden ulaşır; varsayılan API adresi `http://10.0.2.2:5098`. Gerçek telefonda ya da farklı bir portta:
+Emülatör bilgisayarın `localhost`'una `10.0.2.2` üzerinden ulaşır; varsayılan API adresi `http://10.0.2.2:5080`. Gerçek telefonda ya da farklı bir portta:
 
 ```bash
-flutter run --dart-define=API_BASE_URL=http://192.168.1.20:5098
+flutter run --dart-define=API_BASE_URL=http://192.168.1.20:5080
 ```
 
 Ana sayfadaki "API bağlantısı" kartı `/api/health` sonucunu gösterir; yenile düğmesiyle tekrar denenir.
@@ -42,6 +42,17 @@ Ana sayfadaki "API bağlantısı" kartı `/api/health` sonucunu gösterir; yenil
 - Her API isteğine `Authorization: Bearer <token>` eklenir; API 401 dönerse oturum kapatılıp giriş ekranına dönülür.
 - Sekmeler role göre gösterilir: herkes Ana Sayfa, Harita, Profil; **Yönetim** sekmesi yalnızca Yönetici rolüne açıktır (doğrudan `/admin` adresine gitmek de engellenir).
 
+## Etkinlik yönetimi (Yönetici)
+
+Yönetim → Etkinlikler (`/admin/events`). Uç noktalar `docs/api-sozlesmesi.md`'deki Events sözleşmesidir.
+
+- Liste `GET /api/events` ile 20'şer sayfalı gelir; başlıkta arama, aşağı çekerek yenileme, "Daha fazla göster" ile sonraki sayfa.
+- İki sekme: **Yaklaşan** (`from=şimdi`, en yakın önce) ve **Geçmiş** (`to=şimdi&order=desc`, en yeni önce). Arama iki sekmeye de uygulanır. Tarihi geçmiş etkinlikler düzenlenemez; ayrıntısı görüntülenir ve silinebilir.
+- Ekleme `POST`, düzenleme `PUT /api/events/{id}`, silme onay penceresinden sonra `DELETE`. Kulüp seçimi `GET /api/clubs` listesinden yapılır.
+- Form, API ile aynı kuralları denetler: kulüp ve başlık zorunlu (en fazla 200 karakter), tarih geçmişte olamaz, kontenjan sıfırdan büyük. Tarih cihaz saatiyle seçilir, API'ye UTC gider.
+- Boş liste, bağlantı hatası (tekrar dene), 403/404 ve silinemeyen etkinlik (409) için Türkçe mesaj gösterilir.
+- Kulüp yetkilisinin etkinlik yönetimi mobilde değil, MVC portalındadır.
+
 ## Klasör yapısı
 
 ```
@@ -53,8 +64,11 @@ lib/
     network/             dio istemcisi
     router/              go_router yönlendirmeleri
     theme/               renkler, tema
+    format.dart          tarih biçimleri
   features/
     home/                ana sayfa, modül kartları
+    events/              etkinlik modelleri, API istemcisi, yönetim ekranları
+    clubs/               kulüp listesi (etkinlik formundaki seçim için)
     health/              API bağlantı kontrolü
     map/                 Tandoğan kampüs haritası (MapLibre + OpenStreetMap)
 ```

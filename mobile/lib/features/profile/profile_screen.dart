@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/format.dart';
 import '../auth/session_controller.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -71,7 +72,7 @@ class ProfileScreen extends ConsumerWidget {
                 ListTile(
                   leading: const Icon(Icons.timer_outlined),
                   title: const Text('Oturum bitişi'),
-                  subtitle: Text(_formatDateTime(expires)),
+                  subtitle: Text(formatDateTime(expires)),
                 ),
               ],
             ),
@@ -86,9 +87,4 @@ class ProfileScreen extends ConsumerWidget {
       ),
     );
   }
-}
-
-String _formatDateTime(DateTime d) {
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${two(d.day)}.${two(d.month)}.${d.year} ${two(d.hour)}:${two(d.minute)}';
 }

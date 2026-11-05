@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using System.Text.Json;
 
 namespace AnkuApp.Web.Services;
 
@@ -55,7 +54,7 @@ public class AuthApiClient(HttpClient http, ILogger<AuthApiClient> logger)
 
             if (!response.IsSuccessStatusCode)
             {
-                var detail = await ReadProblemDetailAsync(response, ct);
+                var (detail, _) = await ApiErrors.ReadAsync(response, ct);
                 return new LoginResult(LoginStatus.Failed, Error: detail ?? $"Giriş başarısız ({(int)response.StatusCode}).");
             }
 
@@ -66,33 +65,6 @@ public class AuthApiClient(HttpClient http, ILogger<AuthApiClient> logger)
             }
 
             return new LoginResult(LoginStatus.Success, body);
-        }
-    }
-
-    private static async Task<string?> ReadProblemDetailAsync(HttpResponseMessage response, CancellationToken ct)
-    {
-        try
-        {
-            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
-            if (doc.RootElement.ValueKind != JsonValueKind.Object)
-            {
-                return null;
-            }
-
-            // ProblemDetails "detail", API'nin kendi hata gövdeleri "message" kullanır
-            foreach (var name in (string[])["detail", "message"])
-            {
-                if (doc.RootElement.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String)
-                {
-                    return value.GetString();
-                }
-            }
-
-            return null;
-        }
-        catch (JsonException)
-        {
-            return null;
         }
     }
 }

@@ -1,0 +1,43 @@
+@model ClubListViewModel
+@{
+    ViewData["Title"] = "Kulübüm";
+}
+
+<h1 class="h3 mb-3">Kulübüm</h1>
+
+@if (Model.LoadError is not null)
+{
+    <div class="alert alert-warning" role="alert">@Model.LoadError</div>
+}
+else if (Model.Clubs.Count == 0)
+{
+    <div class="alert alert-info" role="status">
+        Hesabınıza atanmış bir kulüp yok. Yöneticiden kulübünüzü size atamasını isteyin.
+    </div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-lg-2 g-3">
+        @foreach (var club in Model.Clubs)
+        {
+            <div class="col">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h2 class="h5 card-title">@club.Name</h2>
+                        <p class="card-text text-muted">@(string.IsNullOrEmpty(club.Description) ? "Açıklama eklenmemiş." : club.Description)</p>
+                        @if (!string.IsNullOrEmpty(club.SocialMediaUrl))
+                        {
+                            <p class="card-text small">
+                                <a href="@club.SocialMediaUrl" target="_blank" rel="noopener noreferrer">@club.SocialMediaUrl</a>
+                            </p>
+                        }
+                    </div>
+                    <div class="card-footer bg-transparent d-flex flex-wrap gap-2">
+                        <a class="btn btn-sm btn-anku" asp-action="Edit" asp-route-id="@club.Id">Bilgileri düzenle</a>
+                        <a class="btn btn-sm btn-outline-secondary" asp-controller="Events" asp-action="Index" asp-route-clubId="@club.Id">Etkinlikler</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

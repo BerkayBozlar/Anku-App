@@ -1,5 +1,38 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:anku_app/features/auth/auth_models.dart';
 import 'package:anku_app/features/auth/session_storage.dart';
+import 'package:dio/dio.dart';
+
+/// İstekleri kaydeden ve her birine [respond] ile yanıt veren sahte adaptör.
+class RecordingAdapter implements HttpClientAdapter {
+  RecordingAdapter(this.respond);
+
+  /// `(durum kodu, JSON gövde)` döndürür.
+  final (int, Object?) Function(RequestOptions options) respond;
+  final requests = <RequestOptions>[];
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    requests.add(options);
+    final (status, body) = respond(options);
+    return ResponseBody.fromString(
+      body == null ? '' : jsonEncode(body),
+      status,
+      headers: {
+        Headers.contentTypeHeader: ['application/json'],
+      },
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
 
 class MemorySessionStorage implements SessionStorage {
   MemorySessionStorage([this.session]);

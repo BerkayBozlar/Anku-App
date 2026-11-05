@@ -1,0 +1,21 @@
+@model ClubDto
+@{
+    ViewData["Title"] = "Kulübü sil";
+}
+
+<div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6">
+        <div class="card border-danger">
+            <div class="card-body p-4">
+                <h1 class="h4">Kulübü sil</h1>
+                <p><strong>@Model.Name</strong> kulübü silinecek. Bu işlem geri alınamaz.</p>
+                <p class="small text-muted mb-4">Kulübe bağlı etkinlikler varsa silme işlemi yapılmaz; önce etkinlikleri silin.</p>
+
+                <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="d-flex flex-column flex-sm-row gap-2 justify-content-end">
+                    <a class="btn btn-outline-secondary" asp-action="Index">Vazgeç</a>
+                    <button type="submit" class="btn btn-danger">Sil</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

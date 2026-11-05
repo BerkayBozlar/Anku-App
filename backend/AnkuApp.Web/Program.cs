@@ -15,6 +15,20 @@ var portalPolicy = new AuthorizationPolicyBuilder()
 builder.Services.AddControllersWithViews(options =>
 {
     options.Filters.Add(new AuthorizeFilter(portalPolicy));
+
+    // Model bağlama hataları (ör. kontenjana "abc") varsayılan olarak İngilizce
+    var messages = options.ModelBindingMessageProvider;
+    messages.SetValueMustBeANumberAccessor(field => $"{field} alanına bir sayı girin.");
+    messages.SetAttemptedValueIsInvalidAccessor((value, field) => $"\"{value}\" değeri {field} için geçerli değil.");
+    messages.SetValueIsInvalidAccessor(value => $"\"{value}\" değeri geçerli değil.");
+    messages.SetValueMustNotBeNullAccessor(value => $"\"{value}\" değeri geçerli değil.");
+    messages.SetMissingBindRequiredValueAccessor(field => $"{field} alanı zorunludur.");
+    messages.SetMissingKeyOrValueAccessor(() => "Değer zorunludur.");
+    messages.SetMissingRequestBodyRequiredValueAccessor(() => "İstek gövdesi boş olamaz.");
+    messages.SetNonPropertyAttemptedValueIsInvalidAccessor(value => $"\"{value}\" değeri geçerli değil.");
+    messages.SetNonPropertyUnknownValueIsInvalidAccessor(() => "Girilen değer geçerli değil.");
+    messages.SetUnknownValueIsInvalidAccessor(field => $"{field} için girilen değer geçerli değil.");
+    messages.SetNonPropertyValueMustBeANumberAccessor(() => "Bir sayı girin.");
 });
 
 builder.Services
@@ -31,14 +45,27 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
-// Giriş, ortak Web API üzerinden yapılır (docs/api-sozlesmesi.md)
+// Giriş ve tüm veriler ortak Web API üzerinden gelir (docs/api-sozlesmesi.md)
 var apiBaseUrl = builder.Configuration["Api:BaseUrl"]
     ?? throw new InvalidOperationException("Api:BaseUrl ayarı eksik.");
-builder.Services.AddHttpClient<AuthApiClient>(client =>
+void ConfigureApi(HttpClient client)
 {
     client.BaseAddress = new Uri(apiBaseUrl.TrimEnd('/') + "/");
     client.Timeout = TimeSpan.FromSeconds(10);
-});
+}
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddTransient<AccessTokenHandler>();
+builder.Services.AddHttpClient<AuthApiClient>(ConfigureApi);
+// Girişten sonraki istekler kullanıcının API token'ıyla gider. Yönlendirme izlenmez:
+// HttpClient yönlendirmede Authorization başlığını düşürür, API 401 döner ve oturum kapanırdı.
+HttpMessageHandler NoRedirectHandler() => new SocketsHttpHandler { AllowAutoRedirect = false };
+builder.Services.AddHttpClient<ClubsApiClient>(ConfigureApi)
+    .ConfigurePrimaryHttpMessageHandler(NoRedirectHandler)
+    .AddHttpMessageHandler<AccessTokenHandler>();
+builder.Services.AddHttpClient<EventsApiClient>(ConfigureApi)
+    .ConfigurePrimaryHttpMessageHandler(NoRedirectHandler)
+    .AddHttpMessageHandler<AccessTokenHandler>();
 
 var app = builder.Build();
 
