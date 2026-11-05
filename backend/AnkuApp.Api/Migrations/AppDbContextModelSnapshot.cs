@@ -90,6 +90,39 @@ namespace AnkuApp.Api.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("AnkuApp.Api.Models.CampusLocation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AccessibilityInfo")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Campus")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<double?>("Latitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("Longitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Type")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("CampusLocations");
+                });
+
             modelBuilder.Entity("AnkuApp.Api.Models.Club", b =>
                 {
                     b.Property<int>("Id")
@@ -116,6 +149,51 @@ namespace AnkuApp.Api.Migrations
                     b.HasIndex("AuthorizedUserId");
 
                     b.ToTable("Clubs");
+                });
+
+            modelBuilder.Entity("AnkuApp.Api.Models.Event", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CampusLocationId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Capacity")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ClubId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTime>("EventDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CampusLocationId");
+
+                    b.HasIndex("ClubId");
+
+                    b.HasIndex("EventDate");
+
+                    b.ToTable("Events");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -259,6 +337,24 @@ namespace AnkuApp.Api.Migrations
                     b.Navigation("AuthorizedUser");
                 });
 
+            modelBuilder.Entity("AnkuApp.Api.Models.Event", b =>
+                {
+                    b.HasOne("AnkuApp.Api.Models.CampusLocation", "CampusLocation")
+                        .WithMany("Events")
+                        .HasForeignKey("CampusLocationId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("AnkuApp.Api.Models.Club", "Club")
+                        .WithMany("Events")
+                        .HasForeignKey("ClubId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CampusLocation");
+
+                    b.Navigation("Club");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -308,6 +404,16 @@ namespace AnkuApp.Api.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("AnkuApp.Api.Models.CampusLocation", b =>
+                {
+                    b.Navigation("Events");
+                });
+
+            modelBuilder.Entity("AnkuApp.Api.Models.Club", b =>
+                {
+                    b.Navigation("Events");
                 });
 #pragma warning restore 612, 618
         }

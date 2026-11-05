@@ -201,6 +201,19 @@ Başarılı yanıt - 200 OK:
   "pageSize": 20,
   "totalCount": 1
 }
+### GET /api/clubs
+
+JWT gerektirir.
+
+Başarılı yanıt: 200 OK
+
+[
+  {
+    "id": 1,
+    "name": "AnküApp Test Kulübü",
+    "description": "Etkinlik API testleri için örnek kulüp"
+  }
+]
 GET /api/events/{id}
 Tek etkinliğin ayrıntısını döndürür.
 
