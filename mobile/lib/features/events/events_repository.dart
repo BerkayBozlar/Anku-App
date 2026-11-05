@@ -20,11 +20,16 @@ class EventsRepository {
 
   final Dio _dio;
 
+  /// [from]: bu andan (dahil) sonraki, [to]: bu andan önceki etkinlikler.
+  /// [descending] ise en yeni tarih önce gelir.
   Future<EventPage> list({
     int page = 1,
     int pageSize = 20,
     String? search,
     int? clubId,
+    DateTime? from,
+    DateTime? to,
+    bool descending = false,
   }) {
     return _guard(() async {
       final response = await _dio.get<Map<String, dynamic>>(
@@ -35,6 +40,9 @@ class EventsRepository {
           if (search != null && search.trim().isNotEmpty)
             'search': search.trim(),
           'clubId': ?clubId,
+          if (from != null) 'from': _utc(from),
+          if (to != null) 'to': _utc(to),
+          if (descending) 'order': 'desc',
         },
       );
       return EventPage.fromJson(response.data ?? const {});
@@ -67,6 +75,19 @@ class EventsRepository {
 
   Future<void> delete(int id) {
     return _guard(() => _dio.delete<void>('/api/events/$id'));
+  }
+
+  // 2026-11-05T09:30:00Z (saniye altı gönderilmez)
+  static String _utc(DateTime value) {
+    final utc = value.toUtc();
+    return DateTime.utc(
+      utc.year,
+      utc.month,
+      utc.day,
+      utc.hour,
+      utc.minute,
+      utc.second,
+    ).toIso8601String().replaceFirst('.000', '');
   }
 
   static Future<T> _guard<T>(Future<T> Function() call) async {

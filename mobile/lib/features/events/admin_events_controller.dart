@@ -3,11 +3,34 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'event_models.dart';
 import 'events_repository.dart';
 
+/// Yönetim ekranındaki sekmeler.
+enum EventTimeframe {
+  /// Tarihi gelmemiş etkinlikler, en yakın önce.
+  upcoming,
+
+  /// Tarihi geçmiş etkinlikler, en yeni önce; salt okunur.
+  past,
+}
+
+/// İki sekmenin ortak arama metni.
+class AdminEventSearch extends Notifier<String> {
+  @override
+  String build() => '';
+
+  void set(String value) => state = value.trim();
+}
+
+final adminEventSearchProvider =
+    NotifierProvider.autoDispose<AdminEventSearch, String>(
+      AdminEventSearch.new,
+    );
+
 class AdminEventsState {
   const AdminEventsState({
     required this.items,
     required this.totalCount,
     required this.page,
+    required this.boundary,
     this.search = '',
     this.isLoadingMore = false,
   });
@@ -17,6 +40,10 @@ class AdminEventsState {
 
   /// Son yüklenen sayfa.
   final int page;
+
+  /// Yaklaşan/geçmiş ayrımının yapıldığı an. Sonraki sayfalar da aynı anla
+  /// istenir; aksi halde sayfalar arasında etkinlik kayabilir.
+  final DateTime boundary;
   final String search;
   final bool isLoadingMore;
 
@@ -32,30 +59,47 @@ class AdminEventsState {
       items: items ?? this.items,
       totalCount: totalCount ?? this.totalCount,
       page: page ?? this.page,
+      boundary: boundary,
       search: search,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
     );
   }
 }
 
-/// Yönetim ekranındaki sayfalı etkinlik listesi.
+/// Bir sekmenin sayfalı etkinlik listesi. Arama değişince baştan yüklenir.
 class AdminEventsController extends AsyncNotifier<AdminEventsState> {
+  AdminEventsController(this.timeframe);
+
   static const pageSize = 20;
 
-  String _search = '';
+  final EventTimeframe timeframe;
 
   @override
-  Future<AdminEventsState> build() => _firstPage();
+  Future<AdminEventsState> build() =>
+      _firstPage(ref.watch(adminEventSearchProvider));
 
-  Future<AdminEventsState> _firstPage() async {
-    final search = _search;
-    final page = await ref
+  Future<EventPage> _fetch(int page, String search, DateTime boundary) {
+    final past = timeframe == EventTimeframe.past;
+    return ref
         .read(eventsRepositoryProvider)
-        .list(page: 1, pageSize: pageSize, search: search);
+        .list(
+          page: page,
+          pageSize: pageSize,
+          search: search,
+          from: past ? null : boundary,
+          to: past ? boundary : null,
+          descending: past,
+        );
+  }
+
+  Future<AdminEventsState> _firstPage(String search) async {
+    final boundary = DateTime.now().toUtc();
+    final page = await _fetch(1, search, boundary);
     return AdminEventsState(
       items: page.items,
       totalCount: page.totalCount,
       page: 1,
+      boundary: boundary,
       search: search,
     );
   }
@@ -64,21 +108,11 @@ class AdminEventsController extends AsyncNotifier<AdminEventsState> {
   /// olarak fırlatılır ve mevcut liste korunur.
   Future<void> refresh() async {
     try {
-      state = AsyncData(await _firstPage());
+      state = AsyncData(await _firstPage(ref.read(adminEventSearchProvider)));
     } on EventsException catch (e, st) {
       if (state.hasValue && !state.hasError) rethrow;
       state = AsyncError(e, st);
     }
-  }
-
-  /// Aramayı uygular; aynı arama zaten gösteriliyorsa bir şey yapmaz,
-  /// hata sonrası "Tekrar dene" için de kullanılır.
-  Future<void> search(String query) async {
-    final trimmed = query.trim();
-    if (trimmed == _search && state.hasValue && !state.hasError) return;
-    _search = trimmed;
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(_firstPage);
   }
 
   /// Sonraki sayfayı ekler; hata [EventsException] olarak fırlatılır.
@@ -88,15 +122,13 @@ class AdminEventsController extends AsyncNotifier<AdminEventsState> {
 
     state = AsyncData(current.copyWith(isLoadingMore: true));
     try {
-      final next = await ref
-          .read(eventsRepositoryProvider)
-          .list(
-            page: current.page + 1,
-            pageSize: pageSize,
-            search: current.search,
-          );
-      // Bu arada arama değiştiyse eski sonuç eklenmez
-      if (!ref.mounted || state.value?.search != current.search) return;
+      final next = await _fetch(
+        current.page + 1,
+        current.search,
+        current.boundary,
+      );
+      // Bu arada liste yeniden yüklendiyse eski sonuç eklenmez
+      if (!ref.mounted || state.value?.boundary != current.boundary) return;
       state = AsyncData(
         current.copyWith(
           items: [...current.items, ...next.items],
@@ -106,7 +138,9 @@ class AdminEventsController extends AsyncNotifier<AdminEventsState> {
         ),
       );
     } on EventsException {
-      if (ref.mounted) state = AsyncData(current);
+      if (ref.mounted && state.value?.boundary == current.boundary) {
+        state = AsyncData(current);
+      }
       rethrow;
     }
   }
@@ -124,8 +158,8 @@ class AdminEventsController extends AsyncNotifier<AdminEventsState> {
   }
 }
 
-final adminEventsProvider =
-    AsyncNotifierProvider.autoDispose<AdminEventsController, AdminEventsState>(
+final adminEventsProvider = AsyncNotifierProvider.autoDispose
+    .family<AdminEventsController, AdminEventsState, EventTimeframe>(
       AdminEventsController.new,
       retry: (_, _) => null,
     );

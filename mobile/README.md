@@ -47,6 +47,7 @@ Ana sayfadaki "API bağlantısı" kartı `/api/health` sonucunu gösterir; yenil
 Yönetim → Etkinlikler (`/admin/events`). Uç noktalar `docs/api-sozlesmesi.md`'deki Events sözleşmesidir.
 
 - Liste `GET /api/events` ile 20'şer sayfalı gelir; başlıkta arama, aşağı çekerek yenileme, "Daha fazla göster" ile sonraki sayfa.
+- İki sekme: **Yaklaşan** (`from=şimdi`, en yakın önce) ve **Geçmiş** (`to=şimdi&order=desc`, en yeni önce). Arama iki sekmeye de uygulanır. Tarihi geçmiş etkinlikler düzenlenemez; ayrıntısı görüntülenir ve silinebilir.
 - Ekleme `POST`, düzenleme `PUT /api/events/{id}`, silme onay penceresinden sonra `DELETE`. Kulüp seçimi `GET /api/clubs` listesinden yapılır.
 - Form, API ile aynı kuralları denetler: kulüp ve başlık zorunlu (en fazla 200 karakter), tarih geçmişte olamaz, kontenjan sıfırdan büyük. Tarih cihaz saatiyle seçilir, API'ye UTC gider.
 - Boş liste, bağlantı hatası (tekrar dene), 403/404 ve silinemeyen etkinlik (409) için Türkçe mesaj gösterilir.

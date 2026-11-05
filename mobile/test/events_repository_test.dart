@@ -58,6 +58,31 @@ void main() {
     });
   });
 
+  test(
+    'geçmiş sorgusu to ve order=desc ile, UTC saniye hassasiyetinde',
+    () async {
+      final adapter = RecordingAdapter((_) => (200, {'items': []}));
+      final repo = _repo(adapter);
+      // Türkiye saati 12:30:15.789 -> UTC 09:30:15
+      final now = DateTime.utc(2026, 11, 5, 9, 30, 15, 789).toLocal();
+
+      await repo.list(to: now, descending: true);
+      await repo.list(from: now);
+
+      expect(adapter.requests[0].queryParameters, {
+        'page': 1,
+        'pageSize': 20,
+        'to': '2026-11-05T09:30:15Z',
+        'order': 'desc',
+      });
+      expect(adapter.requests[1].queryParameters, {
+        'page': 1,
+        'pageSize': 20,
+        'from': '2026-11-05T09:30:15Z',
+      });
+    },
+  );
+
   test('ekleme ve güncelleme doğru uç noktaya gider', () async {
     final adapter = RecordingAdapter(
       (options) => options.method == 'POST' ? (201, _event) : (204, null),

@@ -27,6 +27,7 @@ class _FakeEventsRepository implements EventsRepository {
   EventsException? listError;
   EventsException? deleteError;
   final updates = <(int, EventInput)>[];
+  final listCalls = <({DateTime? from, DateTime? to, bool descending})>[];
 
   @override
   Future<EventPage> list({
@@ -34,11 +35,23 @@ class _FakeEventsRepository implements EventsRepository {
     int pageSize = 20,
     String? search,
     int? clubId,
+    DateTime? from,
+    DateTime? to,
+    bool descending = false,
   }) async {
+    listCalls.add((from: from, to: to, descending: descending));
     if (listError != null) throw listError!;
-    final matching = events
-        .where((e) => search == null || e.title.contains(search))
-        .toList();
+    final matching =
+        events
+            .where((e) => search == null || e.title.contains(search))
+            .where((e) => from == null || !e.eventDate.isBefore(from))
+            .where((e) => to == null || e.eventDate.isBefore(to))
+            .toList()
+          ..sort(
+            (a, b) => descending
+                ? b.eventDate.compareTo(a.eventDate)
+                : a.eventDate.compareTo(b.eventDate),
+          );
     return EventPage(
       items: matching.skip((page - 1) * pageSize).take(pageSize).toList(),
       page: page,
@@ -67,13 +80,21 @@ class _FakeEventsRepository implements EventsRepository {
   }
 }
 
-ClubEvent _event(int id, String title, {int? campusLocationId}) => ClubEvent(
+/// [daysFromNow] eksi ise geçmiş etkinlik.
+ClubEvent _event(
+  int id,
+  String title, {
+  int? campusLocationId,
+  int daysFromNow = 10,
+}) => ClubEvent(
   id: id,
   clubId: 1,
   clubName: 'Müzik Topluluğu',
   campusLocationId: campusLocationId,
   title: title,
-  eventDate: DateTime.now().toUtc().add(Duration(days: 10, minutes: id)),
+  eventDate: DateTime.now().toUtc().add(
+    Duration(days: daysFromNow, minutes: id),
+  ),
   capacity: 100,
   status: EventStatus.published,
 );
@@ -131,8 +152,81 @@ void main() {
   testWidgets('etkinlik yoksa boş durum gösterilir', (tester) async {
     await _openEventsAsAdmin(tester, _FakeEventsRepository([]));
 
-    expect(find.text('Henüz etkinlik yok.'), findsOneWidget);
-    expect(find.text('İlk etkinliği ekle'), findsOneWidget);
+    expect(find.text('Yaklaşan etkinlik yok.'), findsOneWidget);
+    expect(
+      find.widgetWithText(OutlinedButton, 'Etkinlik ekle'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('geçmiş etkinlikler ayrı sekmede, en yeni önce', (tester) async {
+    final repo = _FakeEventsRepository([
+      _event(1, 'Kampüs Konseri'),
+      _event(2, 'Eylül Buluşması', daysFromNow: -60),
+      _event(3, 'Ekim Söyleşisi', daysFromNow: -30),
+    ]);
+    await _openEventsAsAdmin(tester, repo);
+
+    expect(find.text('Kampüs Konseri'), findsOneWidget);
+    expect(find.text('Ekim Söyleşisi'), findsNothing);
+
+    await tester.tap(find.text('Geçmiş'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Kampüs Konseri'), findsNothing);
+    final newer = tester.getTopLeft(find.text('Ekim Söyleşisi')).dy;
+    final older = tester.getTopLeft(find.text('Eylül Buluşması')).dy;
+    expect(newer, lessThan(older));
+
+    // Yaklaşan: from=şimdi artan; geçmiş: to=şimdi azalan
+    expect(repo.listCalls.first.from, isNotNull);
+    expect(repo.listCalls.first.descending, isFalse);
+    expect(repo.listCalls.last.to, isNotNull);
+    expect(repo.listCalls.last.descending, isTrue);
+  });
+
+  testWidgets('geçmiş etkinlik düzenlenmez, ayrıntısı açılır', (tester) async {
+    await _openEventsAsAdmin(
+      tester,
+      _FakeEventsRepository([_event(2, 'Ekim Söyleşisi', daysFromNow: -30)]),
+    );
+    await tester.tap(find.text('Geçmiş'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('İşlemler'));
+    await tester.pumpAndSettle();
+    expect(find.text('Düzenle'), findsNothing);
+    expect(find.text('Ayrıntı'), findsOneWidget);
+    expect(find.text('Sil'), findsOneWidget);
+
+    await tester.tap(find.text('Ayrıntı'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tarihi geçti, düzenlenemez'), findsOneWidget);
+    expect(find.text('Etkinliği düzenle'), findsNothing);
+  });
+
+  testWidgets('arama iki sekmeye de uygulanır', (tester) async {
+    await _openEventsAsAdmin(
+      tester,
+      _FakeEventsRepository([
+        _event(1, 'Kampüs Konseri'),
+        _event(2, 'Bahar Şenliği'),
+        _event(3, 'Eski Konser', daysFromNow: -30),
+        _event(4, 'Eski Şenlik', daysFromNow: -20),
+      ]),
+    );
+
+    await tester.enterText(find.byType(TextField), 'Konser');
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+    expect(find.text('Kampüs Konseri'), findsOneWidget);
+    expect(find.text('Bahar Şenliği'), findsNothing);
+
+    await tester.tap(find.text('Geçmiş'));
+    await tester.pumpAndSettle();
+    expect(find.text('Eski Konser'), findsOneWidget);
+    expect(find.text('Eski Şenlik'), findsNothing);
   });
 
   testWidgets('yükleme hatası ve tekrar deneme', (tester) async {
@@ -180,7 +274,7 @@ void main() {
   testWidgets('boş form doğrulama mesajlarını gösterir', (tester) async {
     await _openEventsAsAdmin(tester, _FakeEventsRepository([]));
 
-    await tester.tap(find.text('Etkinlik ekle'));
+    await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Ekle'));
     await tester.pumpAndSettle();
