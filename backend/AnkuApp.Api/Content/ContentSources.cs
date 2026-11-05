@@ -12,8 +12,23 @@ public sealed class ContentSourceOptions
 
 public static class ContentSources
 {
+    private static readonly TimeZoneInfo Turkey = FindTurkey();
+
     public static DateOnly TurkeyDate(DateTimeOffset instant) => DateOnly.FromDateTime(
-        TimeZoneInfo.ConvertTime(instant, TimeZoneInfo.FindSystemTimeZoneById("Europe/Istanbul")).DateTime);
+        TimeZoneInfo.ConvertTime(instant, Turkey).DateTime);
+
+    private static TimeZoneInfo FindTurkey()
+    {
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("Europe/Istanbul");
+        }
+        catch (Exception ex) when (ex is TimeZoneNotFoundException or InvalidTimeZoneException)
+        {
+            // Saat dilimi verisi olmayan ortamlar (ör. tzdata'sız konteyner). Türkiye 2016'dan beri sabit UTC+3.
+            return TimeZoneInfo.CreateCustomTimeZone("Turkey", TimeSpan.FromHours(3), "Türkiye", "Türkiye");
+        }
+    }
 
     public static bool IsOfficialUrl(string? value) =>
         Uri.TryCreate(value, UriKind.Absolute, out var uri) &&

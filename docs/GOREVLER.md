@@ -62,9 +62,9 @@ Belgelerde kesin olan tarihler: başlangıç **21 Ekim**, ilk video ve iskelet *
 
 ## Hafta 3 — Events CRUD
 
-- [ ] **B** `EventsController`: GET (liste + detay), POST, PUT, DELETE; DTO + validation; Club-Events 1:N
-- [ ] **B** Swagger UI (şu an yalnız `AddOpenApi` var), JWT ile Swagger'dan test; yetki: Yönetici her şey, Kulüp Yetkilisi kendi kulübü
-- [ ] **B** Örnek veri (kulüpler, etkinlikler, Tandoğan konumları) ve temel API testleri
+- [x] **B** `EventsController`: GET (liste + detay), POST, PUT, DELETE; DTO + validation; Club-Events 1:N
+- [x] **B** Swagger UI (şu an yalnız `AddOpenApi` var), JWT ile Swagger'dan test; yetki: Yönetici her şey, Kulüp Yetkilisi kendi kulübü
+- [x] **B** Örnek veri (kulüpler, etkinlikler, Tandoğan konumları) ve temel API testleri
 - [x] **Y** MVC portalında kulüp ve etkinlik yönetim formları (liste, ekle, düzenle, sil, doğrulama mesajları); portalın ihtiyacı olan `/api/clubs` uç noktaları
 - [x] **Y** Flutter API istemcisi (events repository) ve yöneticiye özel etkinlik liste/ekle/düzenle/sil ekranları; hata ve boş durumlar
 
@@ -87,7 +87,7 @@ Teknik kontroller tamamlandı; birlikte prova ve video için [4. hafta demo rehb
 - [x] **B** Yemekhane menüsü verisi ve API'si: SKS aylık listesinden ortak öğle menüsü, tarih/kaynak bilgisi ve yönetici elle giriş yedeği
 - [ ] **Y** Flutter duyuru akışı ve yemekhane menüsü ekranları
 
-Backend ve MVC yönetimi `feature/week5-announcements-meals` branch'inde hazır. 23 birim testi, 45 adet 5. hafta entegrasyon kontrolü ve önceki haftanın 45 kontrolü geçti. Berkay'ın kendi testleri ve açık merge onayı beklenir; `main`e merge yapılmadı. [5. hafta kurulum, test ve mobil entegrasyon rehberi](hafta5-backend.md).
+Backend ve MVC yönetimi `main`de: 23 birim testi, 5. hafta entegrasyon kontrolleri ve önceki haftanın 45 kontrolü geçti. [5. hafta kurulum, test ve mobil entegrasyon rehberi](hafta5-backend.md).
 
 ## Hafta 6 — Ders programı görseli, akademik takvim, hatırlatıcılar
 
