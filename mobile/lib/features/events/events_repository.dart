@@ -33,6 +33,7 @@ class EventsRepository {
     DateTime? from,
     DateTime? to,
     bool descending = false,
+    EventStatus? status,
   }) {
     return _guard(() async {
       final response = await _dio.get<Map<String, dynamic>>(
@@ -46,6 +47,7 @@ class EventsRepository {
           if (from != null) 'from': _utc(from),
           if (to != null) 'to': _utc(to),
           if (descending) 'order': 'desc',
+          if (status != null) 'status': status.apiName,
         },
       );
       return EventPage.fromJson(response.data ?? const {});

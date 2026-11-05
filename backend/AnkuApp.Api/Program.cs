@@ -160,6 +160,13 @@ if (app.Environment.IsDevelopment())
             FullName = "Test Kulüp Yetkilisi",
             Role = "Kulüp Yetkilisi",
             PasswordKey = "Seed:ClubPassword"
+        },
+        new
+        {
+            Email = "ogrenci@ankuapp.test",
+            FullName = "Test Öğrenci",
+            Role = "Öğrenci",
+            PasswordKey = "Seed:StudentPassword"
         }
     };
 

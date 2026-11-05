@@ -27,7 +27,7 @@ Belgelerde kesin olan tarihler: başlangıç **21 Ekim**, ilk video ve iskelet *
 
 ## Mimari kararlar (iki belgeden çıkanlar)
 
-- Klasörler: `backend/AnkuApp.Api` (Web API), `backend/AnkuApp.Web` (MVC portal), `mobile/` (Flutter — henüz yok).
+- Klasörler: `backend/AnkuApp.Api` (Web API), `backend/AnkuApp.Web` (MVC portal), `mobile/` (Flutter).
 - Flutter veritabanına **hiç** bağlanmaz; her şey Web API üzerinden. Mobilde kimlik doğrulama **JWT**, MVC'de Identity cookie.
 - Roller: **Yönetici**, **Kulüp Yetkilisi**, **Öğrenci**. Kulüp Yetkilisi yalnız kendi kulübünün içeriğini yönetir.
 - Events CRUD **iki yerde** olmalı: MVC portalında yönetim formları (Web dersi) ve Flutter'da yöneticiye özel GET/POST/PUT/DELETE ekranları (Flutter dersi).
@@ -73,10 +73,12 @@ Belgelerde kesin olan tarihler: başlangıç **21 Ekim**, ilk video ve iskelet *
 ## Hafta 4 — 18 Kasım ilk gösterim
 
 - [ ] **B** Backend kararlılığı ve demo verisi
-- [ ] **Y** Flutter'da öğrenci için kulüp-etkinlik akışı (liste → detay)
-- [ ] **Y** Tandoğan haritasının temel sürümü
-- [ ] **Y** Flutter/MVC entegrasyonu
+- [x] **Y** Flutter'da öğrenci için kulüp-etkinlik akışı (liste → detay): Keşfet, arama, kulüp filtresi, yaklaşan/geçmiş ve yayın durumu
+- [x] **Y** Tandoğan haritasının temel sürümü: OSM, yakınlaştırma/kaydırma ve kampüse dönüş
+- [x] **Y** Flutter/MVC entegrasyonu: ortak API, yayın görünürlüğü ve [otomatik entegrasyon kontrolü](../scripts/Test-Week4Integration.ps1)
 - [ ] **B+Y** Demo provası: giriş + roller, responsive MVC portalı, Events CRUD (portal + Flutter + Swagger), etkinlik akışı, harita
+
+Teknik kontroller tamamlandı; birlikte prova ve video için [4. hafta demo rehberi](demo-hafta4.md). Haritadaki işaretler, arama, GPS ve yönlendirme 7. haftada; takip/katılım 8. haftada yapılacak.
 
 ## Hafta 5 — Duyurular ve yemekhane menüsü
 
