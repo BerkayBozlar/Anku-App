@@ -1,0 +1,255 @@
+import 'package:anku_app/app.dart';
+import 'package:anku_app/features/auth/auth_models.dart';
+import 'package:anku_app/features/auth/session_storage.dart';
+import 'package:anku_app/features/clubs/club_models.dart';
+import 'package:anku_app/features/clubs/clubs_repository.dart';
+import 'package:anku_app/features/events/event_models.dart';
+import 'package:anku_app/features/events/events_repository.dart';
+import 'package:anku_app/features/health/api_health.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import 'test_helpers.dart';
+
+class _FakeClubsRepository implements ClubsRepository {
+  @override
+  Future<List<Club>> list() async => const [
+    Club(id: 1, name: 'Müzik Topluluğu'),
+    Club(id: 2, name: 'Satranç Kulübü'),
+  ];
+}
+
+class _FakeEventsRepository implements EventsRepository {
+  _FakeEventsRepository(this.events);
+
+  final List<ClubEvent> events;
+  EventsException? listError;
+  EventsException? deleteError;
+  final updates = <(int, EventInput)>[];
+
+  @override
+  Future<EventPage> list({
+    int page = 1,
+    int pageSize = 20,
+    String? search,
+    int? clubId,
+  }) async {
+    if (listError != null) throw listError!;
+    final matching = events
+        .where((e) => search == null || e.title.contains(search))
+        .toList();
+    return EventPage(
+      items: matching.skip((page - 1) * pageSize).take(pageSize).toList(),
+      page: page,
+      pageSize: pageSize,
+      totalCount: matching.length,
+    );
+  }
+
+  @override
+  Future<ClubEvent> get(int id) async => events.firstWhere((e) => e.id == id);
+
+  @override
+  Future<ClubEvent> create(EventInput input) => throw UnimplementedError();
+
+  @override
+  Future<void> update(int id, EventInput input) async {
+    updates.add((id, input));
+    final index = events.indexWhere((e) => e.id == id);
+    events[index] = _event(id, input.title, campusLocationId: 3);
+  }
+
+  @override
+  Future<void> delete(int id) async {
+    if (deleteError != null) throw deleteError!;
+    events.removeWhere((e) => e.id == id);
+  }
+}
+
+ClubEvent _event(int id, String title, {int? campusLocationId}) => ClubEvent(
+  id: id,
+  clubId: 1,
+  clubName: 'Müzik Topluluğu',
+  campusLocationId: campusLocationId,
+  title: title,
+  eventDate: DateTime.now().toUtc().add(Duration(days: 10, minutes: id)),
+  capacity: 100,
+  status: EventStatus.published,
+);
+
+Future<void> _openEventsAsAdmin(
+  WidgetTester tester,
+  _FakeEventsRepository events,
+) async {
+  // Telefon boyu: formun tamamı ekrana sığsın
+  tester.view.physicalSize = const Size(420, 900);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        sessionStorageProvider.overrideWithValue(
+          MemorySessionStorage(sessionFor(UserRole.yonetici)),
+        ),
+        apiHealthProvider.overrideWith(
+          (ref) async => const ApiHealth(status: 'ok', application: 'test'),
+        ),
+        eventsRepositoryProvider.overrideWithValue(events),
+        clubsRepositoryProvider.overrideWithValue(_FakeClubsRepository()),
+      ],
+      child: const AnkuApp(),
+    ),
+  );
+  await tester.pumpAndSettle();
+
+  await tester.tap(
+    find.descendant(
+      of: find.byType(NavigationBar),
+      matching: find.text('Yönetim'),
+    ),
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Etkinlikler'));
+  await tester.pumpAndSettle();
+}
+
+void main() {
+  testWidgets('etkinlikler kulüp ve durumla listelenir', (tester) async {
+    await _openEventsAsAdmin(
+      tester,
+      _FakeEventsRepository([_event(1, 'Kampüs Konseri')]),
+    );
+
+    expect(find.text('Etkinlik yönetimi'), findsOneWidget);
+    expect(find.text('Kampüs Konseri'), findsOneWidget);
+    expect(find.textContaining('Müzik Topluluğu'), findsOneWidget);
+    expect(find.text('Yayında'), findsOneWidget);
+  });
+
+  testWidgets('etkinlik yoksa boş durum gösterilir', (tester) async {
+    await _openEventsAsAdmin(tester, _FakeEventsRepository([]));
+
+    expect(find.text('Henüz etkinlik yok.'), findsOneWidget);
+    expect(find.text('İlk etkinliği ekle'), findsOneWidget);
+  });
+
+  testWidgets('yükleme hatası ve tekrar deneme', (tester) async {
+    final repo = _FakeEventsRepository([_event(1, 'Kampüs Konseri')])
+      ..listError = const EventsException('Sunucuya bağlanılamadı.');
+    await _openEventsAsAdmin(tester, repo);
+
+    expect(find.text('Sunucuya bağlanılamadı.'), findsOneWidget);
+
+    repo.listError = null;
+    await tester.tap(find.text('Tekrar dene'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Kampüs Konseri'), findsOneWidget);
+  });
+
+  testWidgets('daha fazla göster sonraki sayfayı ekler', (tester) async {
+    await _openEventsAsAdmin(
+      tester,
+      _FakeEventsRepository([
+        for (var i = 1; i <= 21; i++) _event(i, 'Etkinlik $i'),
+      ]),
+    );
+
+    final list = find.descendant(
+      of: find.byType(RefreshIndicator),
+      matching: find.byType(Scrollable),
+    );
+    expect(find.text('Etkinlik 21'), findsNothing);
+    // Listenin sonuna in: alttaki boşluk sayesinde düğme "Etkinlik ekle"nin üstünde kalır
+    await tester.fling(list, const Offset(0, -3000), 3000);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Daha fazla göster'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Etkinlik 21'),
+      300,
+      scrollable: list,
+    );
+
+    expect(find.text('Etkinlik 21'), findsOneWidget);
+    expect(find.text('Daha fazla göster'), findsNothing);
+  });
+
+  testWidgets('boş form doğrulama mesajlarını gösterir', (tester) async {
+    await _openEventsAsAdmin(tester, _FakeEventsRepository([]));
+
+    await tester.tap(find.text('Etkinlik ekle'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Ekle'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Kulüp seçin.'), findsOneWidget);
+    expect(find.text('Başlık zorunludur.'), findsOneWidget);
+    expect(find.text('Tarih ve saat seçin.'), findsOneWidget);
+    expect(find.text('Kontenjan zorunludur.'), findsOneWidget);
+  });
+
+  testWidgets('düzenleme kaydedilir, konum korunur, liste yenilenir', (
+    tester,
+  ) async {
+    final repo = _FakeEventsRepository([
+      _event(7, 'Kampüs Konseri', campusLocationId: 3),
+    ]);
+    await _openEventsAsAdmin(tester, repo);
+
+    await tester.tap(find.text('Kampüs Konseri'));
+    await tester.pumpAndSettle();
+    expect(find.text('Etkinliği düzenle'), findsOneWidget);
+
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Kampüs Konseri'),
+      'Bahar Konseri',
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Kaydet'));
+    await tester.pumpAndSettle();
+
+    final (id, input) = repo.updates.single;
+    expect(id, 7);
+    expect(input.title, 'Bahar Konseri');
+    expect(input.campusLocationId, 3);
+    expect(input.clubId, 1);
+    expect(find.text('Etkinlik güncellendi.'), findsOneWidget);
+    expect(find.text('Bahar Konseri'), findsOneWidget);
+  });
+
+  testWidgets('silme onaylanınca etkinlik listeden kalkar', (tester) async {
+    await _openEventsAsAdmin(
+      tester,
+      _FakeEventsRepository([_event(1, 'Kampüs Konseri')]),
+    );
+
+    await tester.tap(find.byTooltip('İşlemler'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sil'));
+    await tester.pumpAndSettle();
+    expect(find.text('Etkinlik silinsin mi?'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Sil'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Etkinlik silindi.'), findsOneWidget);
+    expect(find.text('Kampüs Konseri'), findsNothing);
+  });
+
+  testWidgets('silinemeyen etkinlikte API mesajı gösterilir', (tester) async {
+    final repo = _FakeEventsRepository([_event(1, 'Kampüs Konseri')])
+      ..deleteError = const EventsException('Etkinliğe başvurular var.');
+    await _openEventsAsAdmin(tester, repo);
+
+    await tester.tap(find.byTooltip('İşlemler'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sil'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Sil'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Etkinliğe başvurular var.'), findsOneWidget);
+    expect(find.text('Kampüs Konseri'), findsOneWidget);
+  });
+}

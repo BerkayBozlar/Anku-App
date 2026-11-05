@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
-/// Yalnızca Yönetici rolüne açık. Etkinlik CRUD ekranları 3. haftada eklenecek.
+/// Yalnızca Yönetici rolüne açık.
 class AdminScreen extends StatelessWidget {
   const AdminScreen({super.key});
 
@@ -10,13 +11,14 @@ class AdminScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('Yönetim')),
       body: ListView(
         padding: const EdgeInsets.all(16),
-        children: const [
+        children: [
           Card(
             child: ListTile(
-              leading: Icon(Icons.event_outlined),
-              title: Text('Etkinlikler'),
-              subtitle: Text('Ekleme, düzenleme ve silme'),
-              trailing: Chip(label: Text('Yakında')),
+              leading: const Icon(Icons.event_outlined),
+              title: const Text('Etkinlikler'),
+              subtitle: const Text('Ekleme, düzenleme ve silme'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.go('/admin/events'),
             ),
           ),
         ],

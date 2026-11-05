@@ -42,6 +42,16 @@ Ana sayfadaki "API bağlantısı" kartı `/api/health` sonucunu gösterir; yenil
 - Her API isteğine `Authorization: Bearer <token>` eklenir; API 401 dönerse oturum kapatılıp giriş ekranına dönülür.
 - Sekmeler role göre gösterilir: herkes Ana Sayfa, Harita, Profil; **Yönetim** sekmesi yalnızca Yönetici rolüne açıktır (doğrudan `/admin` adresine gitmek de engellenir).
 
+## Etkinlik yönetimi (Yönetici)
+
+Yönetim → Etkinlikler (`/admin/events`). Uç noktalar `docs/api-sozlesmesi.md`'deki Events sözleşmesidir.
+
+- Liste `GET /api/events` ile 20'şer sayfalı gelir; başlıkta arama, aşağı çekerek yenileme, "Daha fazla göster" ile sonraki sayfa.
+- Ekleme `POST`, düzenleme `PUT /api/events/{id}`, silme onay penceresinden sonra `DELETE`. Kulüp seçimi `GET /api/clubs` listesinden yapılır.
+- Form, API ile aynı kuralları denetler: kulüp ve başlık zorunlu (en fazla 200 karakter), tarih geçmişte olamaz, kontenjan sıfırdan büyük. Tarih cihaz saatiyle seçilir, API'ye UTC gider.
+- Boş liste, bağlantı hatası (tekrar dene), 403/404 ve silinemeyen etkinlik (409) için Türkçe mesaj gösterilir.
+- Kulüp yetkilisinin etkinlik yönetimi mobilde değil, MVC portalındadır.
+
 ## Klasör yapısı
 
 ```
@@ -53,8 +63,11 @@ lib/
     network/             dio istemcisi
     router/              go_router yönlendirmeleri
     theme/               renkler, tema
+    format.dart          tarih biçimleri
   features/
     home/                ana sayfa, modül kartları
+    events/              etkinlik modelleri, API istemcisi, yönetim ekranları
+    clubs/               kulüp listesi (etkinlik formundaki seçim için)
     health/              API bağlantı kontrolü
     map/                 Tandoğan kampüs haritası (MapLibre + OpenStreetMap)
 ```
