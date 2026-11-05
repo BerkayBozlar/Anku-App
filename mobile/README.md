@@ -40,7 +40,19 @@ Ana sayfadaki "API bağlantısı" kartı `/api/health` sonucunu gösterir; yenil
 - Kayıt formu parolayı API ile aynı kurallarla denetler: en az 8 karakter, büyük ve küçük harf, rakam, özel karakter.
 - Dönen oturum (JWT, bitiş zamanı, kullanıcı) `flutter_secure_storage` ile cihazda şifreli saklanır; uygulama yeniden açılınca oturum devam eder, süresi dolmuşsa silinir.
 - Her API isteğine `Authorization: Bearer <token>` eklenir; API 401 dönerse oturum kapatılıp giriş ekranına dönülür.
-- Sekmeler role göre gösterilir: herkes Ana Sayfa, Harita, Profil; **Yönetim** sekmesi yalnızca Yönetici rolüne açıktır (doğrudan `/admin` adresine gitmek de engellenir).
+- Sekmeler role göre gösterilir: herkes Ana Sayfa, Keşfet, Harita, Profil; **Yönetim** sekmesi yalnızca Yönetici rolüne açıktır (doğrudan `/admin` adresine gitmek de engellenir).
+
+## Kulüpler ve etkinlikler (öğrenci akışı)
+
+Ana sayfadaki **Kulüpler ve Etkinlikler** kartı veya **Keşfet** sekmesi (`/discover`) bu akışı açar.
+
+- Etkinliklerde Yaklaşan/Geçmiş ayrımı, başlığa göre arama, aşağı çekerek yenileme ve 20'şer sayfalama bulunur. Yalnızca yayındaki kayıtlar `status=Published` filtresiyle istenir; taslaklar öğrenciye API tarafından da gösterilmez.
+- Etkinlik ayrıntısında açıklama, kulüp, cihazın yerel saatinde tarih, konum ve kontenjan gösterilir. Kulüp adına dokunarak o kulübün bilgileri ve etkinlikleri açılır.
+- Kulüpler sekmesinde Türkçe büyük/küçük harf uyumlu ad araması vardır. Kulüp ayrıntısı yalnızca ilgili kulübün etkinliklerini listeler.
+- Bağlantı hatası, boş liste, kaldırılmış kayıt ve sonradan iptal edilmiş etkinlik için ayrı durumlar bulunur. Bu akışta yönetim veya başvuru düğmeleri yoktur; takip/katılım 8. hafta kapsamındadır.
+- Kulüp ayrıntısındaki yenile düğmesi kulüp bilgisini, listeyi aşağı çekme hareketi etkinlikleri yeniler.
+
+İlk gösterim adımları ve ortak API entegrasyon kontrolü: [4. hafta demo rehberi](../docs/demo-hafta4.md).
 
 ## Etkinlik yönetimi (Yönetici)
 
@@ -68,7 +80,8 @@ lib/
   features/
     home/                ana sayfa, modül kartları
     events/              etkinlik modelleri, API istemcisi, yönetim ekranları
-    clubs/               kulüp listesi (etkinlik formundaki seçim için)
+    clubs/               kulüp modelleri, liste ve ayrıntı istemcisi
+    discover/            öğrenci kulüp/etkinlik listeleri ve ayrıntıları
     health/              API bağlantı kontrolü
     map/                 Tandoğan kampüs haritası (MapLibre + OpenStreetMap)
 ```

@@ -19,6 +19,7 @@ class _ControlledRepository implements EventsRepository {
     DateTime? from,
     DateTime? to,
     bool descending = false,
+    EventStatus? status,
   }) {
     final completer = Completer<EventPage>();
     calls.add((search, completer));

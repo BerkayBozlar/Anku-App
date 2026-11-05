@@ -16,14 +16,24 @@ class ClubsRepository {
         Club.fromJson(item as Map<String, dynamic>),
     ];
   }
+
+  Future<Club> get(int id) async {
+    final response = await _dio.get<Map<String, dynamic>>('/api/clubs/$id');
+    return Club.fromJson(response.data!);
+  }
 }
 
 final clubsRepositoryProvider = Provider<ClubsRepository>(
   (ref) => ClubsRepository(ref.watch(dioProvider)),
 );
 
-/// Etkinlik formundaki kulüp seçimi için.
+/// Keşfet ekranındaki liste ve etkinlik formundaki kulüp seçimi için.
 final clubsProvider = FutureProvider.autoDispose<List<Club>>(
   (ref) => ref.watch(clubsRepositoryProvider).list(),
+  retry: (_, _) => null,
+);
+
+final clubDetailsProvider = FutureProvider.autoDispose.family<Club, int>(
+  (ref, id) => ref.watch(clubsRepositoryProvider).get(id),
   retry: (_, _) => null,
 );

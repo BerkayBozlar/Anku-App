@@ -30,7 +30,8 @@ public class EventsController : ControllerBase
         [FromQuery] int? clubId = null,
         [FromQuery] DateTimeOffset? from = null,
         [FromQuery] DateTimeOffset? to = null,
-        [FromQuery] string? order = null)
+        [FromQuery] string? order = null,
+        [FromQuery] string? status = null)
     {
         if (page < 1 || pageSize < 1 || pageSize > 100)
         {
@@ -51,7 +52,18 @@ public class EventsController : ControllerBase
             });
         }
 
-        var query = _context.Events.AsNoTracking();
+        var query = ReadableEvents();
+
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            if (!Enum.TryParse<EventStatus>(status, true, out var eventStatus) ||
+                !Enum.IsDefined(eventStatus))
+            {
+                return BadRequest(new { message = "Geçersiz etkinlik durumu." });
+            }
+
+            query = query.Where(e => e.Status == eventStatus);
+        }
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -118,8 +130,7 @@ public class EventsController : ControllerBase
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
     {
-        var eventItem = await _context.Events
-            .AsNoTracking()
+        var eventItem = await ReadableEvents()
             .Where(e => e.Id == id)
             .Select(e => new
             {
@@ -147,6 +158,16 @@ public class EventsController : ControllerBase
         }
 
         return Ok(eventItem);
+    }
+
+    // Öğrenci akışında henüz yayımlanmamış taslaklar listelenmez ve
+    // kimliği bilinse de ayrıntıları açılmaz. Yönetim akışı değişmez.
+    private IQueryable<AnkuApp.Api.Models.Event> ReadableEvents()
+    {
+        var query = _context.Events.AsNoTracking();
+        return User.IsInRole("Yönetici") || User.IsInRole("Kulüp Yetkilisi")
+            ? query
+            : query.Where(e => e.Status != EventStatus.Draft);
     }
 
     [HttpPost]

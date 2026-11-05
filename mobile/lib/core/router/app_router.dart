@@ -10,6 +10,9 @@ import '../../features/auth/session_controller.dart';
 import '../../features/auth/splash_screen.dart';
 import '../../features/events/admin_events_screen.dart';
 import '../../features/events/event_form_screen.dart';
+import '../../features/discover/discover_screen.dart';
+import '../../features/discover/club_detail_screen.dart';
+import '../../features/discover/event_detail_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/map/campus_map_screen.dart';
 import '../../features/profile/profile_screen.dart';
@@ -110,6 +113,33 @@ final _tabs = <_Tab>[
     icon: Icons.home_outlined,
     selectedIcon: Icons.home,
     label: 'Ana Sayfa',
+  ),
+  _Tab(
+    path: '/discover',
+    builder: (context, state) => const DiscoverScreen(),
+    icon: Icons.explore_outlined,
+    selectedIcon: Icons.explore,
+    label: 'Keşfet',
+    routes: [
+      GoRoute(
+        path: 'clubs/:id',
+        redirect: (context, state) =>
+            (int.tryParse(state.pathParameters['id']!) ?? 0) <= 0
+            ? '/discover'
+            : null,
+        builder: (context, state) =>
+            ClubDetailScreen(clubId: int.parse(state.pathParameters['id']!)),
+      ),
+      GoRoute(
+        path: 'events/:id',
+        redirect: (context, state) =>
+            (int.tryParse(state.pathParameters['id']!) ?? 0) <= 0
+            ? '/discover'
+            : null,
+        builder: (context, state) =>
+            EventDetailScreen(eventId: int.parse(state.pathParameters['id']!)),
+      ),
+    ],
   ),
   _Tab(
     path: '/map',

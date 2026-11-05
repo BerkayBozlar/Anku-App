@@ -180,6 +180,11 @@ Sorgu parametreleri (hepsi isteğe bağlı):
 - from: eventDate >= from (UTC). Yaklaşan etkinlikler için from=şimdi.
 - to: eventDate < to (UTC). Geçmiş etkinlikler için to=şimdi.
 - order: asc (varsayılan, en yakın tarih önce) veya desc (en yeni tarih önce). Liste her zaman eventDate'e göre sıralanır; eşit tarihlerde id'ye göre.
+- status: Draft, Published veya Cancelled (büyük/küçük harf duyarsız). Filtre toplam sayıya ve sayfalamaya da uygulanır. Geçersiz değer 400 döner.
+
+Öğrenci rolünde taslak etkinlikler, filtre verilmese bile listeye ve toplam sayıya girmez. Taslak kimliğiyle ayrıntı istendiğinde 404 döner. Yönetici ve Kulüp Yetkilisi yönetim akışlarında taslakları görmeye devam eder.
+
+Öğrenci Keşfet ekranı yaklaşan ve geçmiş listelerde `status=Published` gönderir. İptal edilen etkinlik yayındaki listeden çıkar; daha önce açılmış ayrıntı yenilenirse `Cancelled` durumu gösterilir.
 
 Portal ve mobil yönetim ekranları "Yaklaşan" sekmesi için from=<şimdi>&order=asc, "Geçmiş" sekmesi için to=<şimdi>&order=desc gönderir.
 Başarılı yanıt - 200 OK:
@@ -230,7 +235,7 @@ Başarılı yanıt - 200 OK:
   "capacity": 250,
   "status": "Published"
 }
-Hata: Etkinlik yoksa 404 Not Found.
+Hata: Etkinlik yoksa veya öğrenci bir taslağı açmaya çalışıyorsa 404 Not Found.
 POST /api/events
 Yeni etkinlik oluşturur. Yönetici veya ilgili kulübün Kulüp Yetkilisi rolü gerekir.
 

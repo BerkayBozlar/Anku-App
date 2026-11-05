@@ -14,6 +14,10 @@ import 'test_helpers.dart';
 
 class _FakeClubsRepository implements ClubsRepository {
   @override
+  Future<Club> get(int id) async =>
+      (await list()).firstWhere((club) => club.id == id);
+
+  @override
   Future<List<Club>> list() async => const [
     Club(id: 1, name: 'Müzik Topluluğu'),
     Club(id: 2, name: 'Satranç Kulübü'),
@@ -38,6 +42,7 @@ class _FakeEventsRepository implements EventsRepository {
     DateTime? from,
     DateTime? to,
     bool descending = false,
+    EventStatus? status,
   }) async {
     listCalls.add((from: from, to: to, descending: descending));
     if (listError != null) throw listError!;
