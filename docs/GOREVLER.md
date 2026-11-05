@@ -65,7 +65,7 @@ Belgelerde kesin olan tarihler: başlangıç **21 Ekim**, ilk video ve iskelet *
 - [ ] **B** `EventsController`: GET (liste + detay), POST, PUT, DELETE; DTO + validation; Club-Events 1:N
 - [ ] **B** Swagger UI (şu an yalnız `AddOpenApi` var), JWT ile Swagger'dan test; yetki: Yönetici her şey, Kulüp Yetkilisi kendi kulübü
 - [ ] **B** Örnek veri (kulüpler, etkinlikler, Tandoğan konumları) ve temel API testleri
-- [ ] **Y** MVC portalında kulüp ve etkinlik yönetim formları (liste, ekle, düzenle, sil, doğrulama mesajları)
+- [x] **Y** MVC portalında kulüp ve etkinlik yönetim formları (liste, ekle, düzenle, sil, doğrulama mesajları); portalın ihtiyacı olan `/api/clubs` uç noktaları
 - [ ] **Y** Flutter API istemcisi (events repository) ve yöneticiye özel etkinlik liste/ekle/düzenle/sil ekranları; hata ve boş durumlar
 
 ## Vize haftası (9–15 Kas, tahmini) — plan dışı, video yok

@@ -1,0 +1,57 @@
+@model ClubFormViewModel
+@{
+    ViewData["Title"] = Model.IsNew ? "Kulüp ekle" : "Kulübü düzenle";
+    var action = Model.IsNew ? "Create" : "Edit";
+    var backAction = Model.CanChangeManager ? "Index" : "Mine";
+}
+
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-8 col-xl-7">
+        <h1 class="h3 mb-3">@ViewData["Title"]</h1>
+
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <form asp-action="@action" asp-route-id="@Model.Id" method="post" novalidate>
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small" role="alert"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Name" class="form-label"></label>
+                        <input asp-for="Name" class="form-control" maxlength="100" />
+                        <span asp-validation-for="Name" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label"></label>
+                        <textarea asp-for="Description" class="form-control" rows="4" maxlength="2000"></textarea>
+                        <span asp-validation-for="Description" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="SocialMediaUrl" class="form-label"></label>
+                        <input asp-for="SocialMediaUrl" class="form-control" type="url" placeholder="https://instagram.com/..." />
+                        <span asp-validation-for="SocialMediaUrl" class="text-danger small"></span>
+                    </div>
+
+                    @if (Model.CanChangeManager)
+                    {
+                        <div class="mb-3">
+                            <label asp-for="AuthorizedUserEmail" class="form-label"></label>
+                            <input asp-for="AuthorizedUserEmail" class="form-control" type="email" autocomplete="off" />
+                            <div class="form-text">Kullanıcının Kulüp Yetkilisi rolünde olması gerekir. Boş bırakılırsa kulübün yetkilisi olmaz.</div>
+                            <span asp-validation-for="AuthorizedUserEmail" class="text-danger small"></span>
+                        </div>
+                    }
+
+                    <div class="d-flex flex-column flex-sm-row gap-2 justify-content-end">
+                        <a class="btn btn-outline-secondary" asp-action="@backAction">Vazgeç</a>
+                        <button type="submit" class="btn btn-anku">@(Model.IsNew ? "Ekle" : "Kaydet")</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -31,14 +31,21 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
-// Giriş, ortak Web API üzerinden yapılır (docs/api-sozlesmesi.md)
+// Giriş ve tüm veriler ortak Web API üzerinden gelir (docs/api-sozlesmesi.md)
 var apiBaseUrl = builder.Configuration["Api:BaseUrl"]
     ?? throw new InvalidOperationException("Api:BaseUrl ayarı eksik.");
-builder.Services.AddHttpClient<AuthApiClient>(client =>
+void ConfigureApi(HttpClient client)
 {
     client.BaseAddress = new Uri(apiBaseUrl.TrimEnd('/') + "/");
     client.Timeout = TimeSpan.FromSeconds(10);
-});
+}
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddTransient<AccessTokenHandler>();
+builder.Services.AddHttpClient<AuthApiClient>(ConfigureApi);
+// Girişten sonraki istekler kullanıcının API token'ıyla gider
+builder.Services.AddHttpClient<ClubsApiClient>(ConfigureApi).AddHttpMessageHandler<AccessTokenHandler>();
+builder.Services.AddHttpClient<EventsApiClient>(ConfigureApi).AddHttpMessageHandler<AccessTokenHandler>();
 
 var app = builder.Build();
 

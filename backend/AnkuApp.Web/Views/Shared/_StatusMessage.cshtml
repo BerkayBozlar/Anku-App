@@ -1,0 +1,20 @@
+@using AnkuApp.Web.Controllers
+@{
+    var status = TempData[PortalController.StatusMessageKey] as string;
+    var error = TempData[PortalController.ErrorMessageKey] as string;
+}
+
+@if (!string.IsNullOrEmpty(status))
+{
+    <div class="alert alert-success alert-dismissible fade show" role="status">
+        @status
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Kapat"></button>
+    </div>
+}
+@if (!string.IsNullOrEmpty(error))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @error
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Kapat"></button>
+    </div>
+}
