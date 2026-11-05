@@ -54,6 +54,14 @@ Ana sayfadaki **Kulüpler ve Etkinlikler** kartı veya **Keşfet** sekmesi (`/di
 
 İlk gösterim adımları ve ortak API entegrasyon kontrolü: [4. hafta demo rehberi](../docs/demo-hafta4.md).
 
+## Duyurular ve yemekhane
+
+Ana sayfadaki **Duyurular** (`/announcements`) ve **Yemekhane** (`/meals`) kartları açar. Veriler API'nin resmî kaynaklardan günlük aldığı kayıtlardır; uç noktalar `docs/api-sozlesmesi.md`'deki 5. hafta bölümündedir.
+
+- Duyurular en yeni yayın tarihi önce, 20'şer sayfalı gelir; başlıkta arama, aşağı çekerek yenileme, "Daha fazla göster". Ayrıntıda özet, yayın tarihi ve kaynak bulunur; **Kaynakta aç** tam metni tarayıcıda açar (`url_launcher`).
+- Yemekhane bugünden başlayan 7 günün ortak öğle menüsünü (`GET /api/meal-menus?from&to`) gösterir. Önceki/sonraki 7 güne geçilir, bugün vurgulanır; menüsü olmayan günler (hafta sonu, tatil) ayrıca belirtilir. Kalori, kaynak adı, son güncelleme ve resmî kaynak bağlantısı listenin altındadır.
+- Bağlantı hatası (API mesajı + tekrar dene), boş liste ve kaldırılmış duyuru için Türkçe durumlar vardır. Yeni içerik bildirimi 8. hafta kapsamındadır.
+
 ## Etkinlik yönetimi (Yönetici)
 
 Yönetim → Etkinlikler (`/admin/events`). Uç noktalar `docs/api-sozlesmesi.md`'deki Events sözleşmesidir.
@@ -73,15 +81,18 @@ lib/
   app.dart               MaterialApp.router + tema
   core/
     config/              API adresi, zaman aşımları
-    network/             dio istemcisi
+    network/             dio istemcisi, ortak API hata dönüşümü
     router/              go_router yönlendirmeleri
     theme/               renkler, tema
-    format.dart          tarih biçimleri
+    format.dart          tarih biçimleri, Türkçe gün adları
+    open_link.dart       bağlantıyı tarayıcıda açma
   features/
     home/                ana sayfa, modül kartları
     events/              etkinlik modelleri, API istemcisi, yönetim ekranları
     clubs/               kulüp modelleri, liste ve ayrıntı istemcisi
     discover/            öğrenci kulüp/etkinlik listeleri ve ayrıntıları
+    announcements/       duyuru listesi ve ayrıntısı
+    meals/               yemekhane haftalık menüsü
     health/              API bağlantı kontrolü
     map/                 Tandoğan kampüs haritası (MapLibre + OpenStreetMap)
 ```

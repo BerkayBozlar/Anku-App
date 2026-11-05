@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/admin/admin_screen.dart';
+import '../../features/announcements/announcement_detail_screen.dart';
+import '../../features/announcements/announcements_screen.dart';
+import '../../features/meals/meal_menu_screen.dart';
 import '../../features/auth/auth_models.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/auth/register_screen.dart';
@@ -113,6 +116,28 @@ final _tabs = <_Tab>[
     icon: Icons.home_outlined,
     selectedIcon: Icons.home,
     label: 'Ana Sayfa',
+    routes: [
+      GoRoute(
+        path: 'announcements',
+        builder: (context, state) => const AnnouncementsScreen(),
+        routes: [
+          GoRoute(
+            path: ':id',
+            redirect: (context, state) =>
+                (int.tryParse(state.pathParameters['id']!) ?? 0) <= 0
+                ? '/announcements'
+                : null,
+            builder: (context, state) => AnnouncementDetailScreen(
+              announcementId: int.parse(state.pathParameters['id']!),
+            ),
+          ),
+        ],
+      ),
+      GoRoute(
+        path: 'meals',
+        builder: (context, state) => const MealMenuScreen(),
+      ),
+    ],
   ),
   _Tab(
     path: '/discover',
