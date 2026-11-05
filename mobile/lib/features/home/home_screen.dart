@@ -18,9 +18,9 @@ class _Module {
 const _modules = [
   _Module('Kampüs Haritası', Icons.map_outlined, route: '/map'),
   _Module('Ders Programı', Icons.calendar_view_week_outlined),
-  _Module('Duyurular', Icons.campaign_outlined),
+  _Module('Duyurular', Icons.campaign_outlined, route: '/announcements'),
   _Module('Kulüpler ve Etkinlikler', Icons.groups_outlined, route: '/discover'),
-  _Module('Yemekhane', Icons.restaurant_outlined),
+  _Module('Yemekhane', Icons.restaurant_outlined, route: '/meals'),
   _Module('Akademik Takvim', Icons.event_note_outlined),
   _Module('Not Hesaplama', Icons.calculate_outlined),
 ];
