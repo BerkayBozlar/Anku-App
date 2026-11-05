@@ -331,6 +331,71 @@ void main() {
     expect(find.text('Kampüs Konseri'), findsNothing);
   });
 
+  testWidgets('silme sonrası "Daha fazla göster" etkinlik atlamaz', (
+    tester,
+  ) async {
+    final repo = _FakeEventsRepository([
+      for (var i = 1; i <= 21; i++) _event(i, 'Etkinlik $i'),
+    ]);
+    await _openEventsAsAdmin(tester, repo);
+
+    await tester.tap(find.byTooltip('İşlemler').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sil'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Sil'));
+    await tester.pumpAndSettle();
+
+    // İlk sayfa yeniden istendi: 20 etkinlik kaldı, hepsi tek sayfada
+    expect(find.text('Etkinlik silindi.'), findsOneWidget);
+    final list = find.descendant(
+      of: find.byType(RefreshIndicator),
+      matching: find.byType(Scrollable),
+    );
+    await tester.fling(list, const Offset(0, -3000), 3000);
+    await tester.pumpAndSettle();
+    expect(find.text('Etkinlik 21'), findsOneWidget);
+    expect(find.text('Daha fazla göster'), findsNothing);
+  });
+
+  testWidgets('başvurulu etkinlik: iptal önerisi yalnız yaklaşanlarda', (
+    tester,
+  ) async {
+    const conflict = EventsException(
+      'Etkinliğe yapılmış başvurular olduğu için silinemiyor.',
+      statusCode: 409,
+    );
+    final repo = _FakeEventsRepository([
+      _event(1, 'Kampüs Konseri'),
+      _event(2, 'Ekim Söyleşisi', daysFromNow: -30),
+    ])..deleteError = conflict;
+    await _openEventsAsAdmin(tester, repo);
+
+    Future<void> deleteFirst() async {
+      await tester.tap(find.byTooltip('İşlemler'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Sil'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Sil'));
+      await tester.pumpAndSettle();
+    }
+
+    await deleteFirst();
+    expect(
+      find.text(
+        'Etkinliğe yapılmış başvurular olduğu için silinemiyor. '
+        'Bunun yerine durumunu "İptal edildi" yapabilirsiniz.',
+      ),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Geçmiş'));
+    await tester.pumpAndSettle();
+    await deleteFirst();
+    expect(find.text(conflict.message), findsOneWidget);
+    expect(find.textContaining('İptal edildi'), findsNothing);
+  });
+
   testWidgets('silinemeyen etkinlikte API mesajı gösterilir', (tester) async {
     final repo = _FakeEventsRepository([_event(1, 'Kampüs Konseri')])
       ..deleteError = const EventsException('Etkinliğe başvurular var.');

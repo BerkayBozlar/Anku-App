@@ -107,9 +107,14 @@ class AdminEventsController extends AsyncNotifier<AdminEventsState> {
   /// Listeyi baştan yükler. Liste zaten gösteriliyorsa hata [EventsException]
   /// olarak fırlatılır ve mevcut liste korunur.
   Future<void> refresh() async {
+    final search = ref.read(adminEventSearchProvider);
+    final boundary = state.value?.boundary;
     try {
-      state = AsyncData(await _firstPage(ref.read(adminEventSearchProvider)));
+      final fresh = await _firstPage(search);
+      if (!_isCurrent(search, boundary)) return;
+      state = AsyncData(fresh);
     } on EventsException catch (e, st) {
+      if (!_isCurrent(search, boundary)) return;
       if (state.hasValue && !state.hasError) rethrow;
       state = AsyncError(e, st);
     }
@@ -127,8 +132,7 @@ class AdminEventsController extends AsyncNotifier<AdminEventsState> {
         current.search,
         current.boundary,
       );
-      // Bu arada liste yeniden yüklendiyse eski sonuç eklenmez
-      if (!ref.mounted || state.value?.boundary != current.boundary) return;
+      if (!_isCurrent(current.search, current.boundary)) return;
       state = AsyncData(
         current.copyWith(
           items: [...current.items, ...next.items],
@@ -138,24 +142,40 @@ class AdminEventsController extends AsyncNotifier<AdminEventsState> {
         ),
       );
     } on EventsException {
-      if (ref.mounted && state.value?.boundary == current.boundary) {
+      if (_isCurrent(current.search, current.boundary)) {
         state = AsyncData(current);
       }
       rethrow;
     }
   }
 
+  /// Siler ve ilk sayfayı yeniden ister. Yerelden çıkarmak sunucudaki sayfa
+  /// sınırlarını kaydırır ve "Daha fazla göster" bir etkinliği atlardı.
   Future<void> delete(int id) async {
     await ref.read(eventsRepositoryProvider).delete(id);
-    final current = state.value;
-    if (current == null || !ref.mounted) return;
-    state = AsyncData(
-      current.copyWith(
-        items: current.items.where((e) => e.id != id).toList(),
-        totalCount: current.totalCount - 1,
-      ),
-    );
+    if (!ref.mounted) return;
+    try {
+      await refresh();
+    } on EventsException {
+      // Silme başarılı; yenileme olmadı. Liste en azından silineni göstermesin.
+      final current = state.value;
+      if (!ref.mounted || current == null) return;
+      state = AsyncData(
+        current.copyWith(
+          items: current.items.where((e) => e.id != id).toList(),
+          totalCount: current.totalCount - 1,
+        ),
+      );
+    }
   }
+
+  /// Beklerken sekme kapanmadıysa, arama değişmediyse ve liste başka bir
+  /// yoldan yeniden yüklenmediyse sonuç uygulanabilir.
+  bool _isCurrent(String search, DateTime? boundary) =>
+      ref.mounted &&
+      !state.isLoading &&
+      ref.read(adminEventSearchProvider) == search &&
+      state.value?.boundary == boundary;
 }
 
 final adminEventsProvider = AsyncNotifierProvider.autoDispose

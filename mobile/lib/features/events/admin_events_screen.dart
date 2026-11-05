@@ -170,10 +170,17 @@ class _EventsTab extends ConsumerWidget {
     );
     if (confirmed != true || !context.mounted) return;
 
-    await _run(context, () async {
+    try {
       await ref.read(adminEventsProvider(timeframe).notifier).delete(event.id);
       if (context.mounted) _showMessage(context, 'Etkinlik silindi.');
-    });
+    } on EventsException catch (e) {
+      if (!context.mounted) return;
+      // Geçmiş etkinlik düzenlenemediği için iptal önerisi yalnız yaklaşanlarda
+      final hint = e.statusCode == 409 && !_isPast
+          ? ' Bunun yerine durumunu "İptal edildi" yapabilirsiniz.'
+          : '';
+      _showMessage(context, e.message + hint);
+    }
   }
 
   @override

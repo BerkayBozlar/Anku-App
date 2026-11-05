@@ -141,6 +141,43 @@ void main() {
     await expectLater(repo.create(_input), _throwsMessage('Kulüp pasif.'));
   });
 
+  test('beklenmeyen JSON biçimi anlaşılır hataya çevrilir', () async {
+    final repo = _repo(
+      RecordingAdapter(
+        (_) => (
+          200,
+          {
+            'items': [
+              {'id': 'kırk beş', 'title': 'Bozuk'},
+            ],
+          },
+        ),
+      ),
+    );
+
+    await expectLater(
+      repo.list(),
+      _throwsMessage('Sunucudan beklenmeyen bir yanıt alındı.'),
+    );
+  });
+
+  test('çakışmada durum kodu korunur, varsayılan mesaj tarafsızdır', () async {
+    final repo = _repo(RecordingAdapter((_) => (409, null)));
+
+    await expectLater(
+      repo.delete(45),
+      throwsA(
+        isA<EventsException>()
+            .having((e) => e.statusCode, 'statusCode', 409)
+            .having(
+              (e) => e.message,
+              'message',
+              'Etkinliğe yapılmış başvurular olduğu için silinemiyor.',
+            ),
+      ),
+    );
+  });
+
   test('yetki, bulunamadı ve çakışma durumları', () async {
     Future<void> expectStatus(int status, Object? body, String message) {
       final repo = _repo(RecordingAdapter((_) => (status, body)));

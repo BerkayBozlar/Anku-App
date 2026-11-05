@@ -5,9 +5,12 @@ import '../../core/network/api_client.dart';
 import 'event_models.dart';
 
 class EventsException implements Exception {
-  const EventsException(this.message);
+  const EventsException(this.message, {this.statusCode});
 
   final String message;
+
+  /// API'nin döndürdüğü HTTP durum kodu; ağ ve biçim hatalarında `null`.
+  final int? statusCode;
 
   @override
   String toString() => message;
@@ -94,9 +97,16 @@ class EventsRepository {
     try {
       return await call();
     } on DioException catch (e) {
-      throw EventsException(messageFor(e));
+      throw EventsException(messageFor(e), statusCode: e.response?.statusCode);
+    } on FormatException {
+      throw const EventsException(_unexpectedResponse);
+    } on TypeError {
+      // Yanıt beklenen JSON biçiminde değil (eksik/yanlış tipte alan)
+      throw const EventsException(_unexpectedResponse);
     }
   }
+
+  static const _unexpectedResponse = 'Sunucudan beklenmeyen bir yanıt alındı.';
 
   static String messageFor(DioException e) {
     final data = e.response?.data;
@@ -110,9 +120,9 @@ class EventsRepository {
       case 404:
         return 'Etkinlik bulunamadı. Silinmiş olabilir.';
       case 409:
+        // "İptal edildi" önerisi yalnız yaklaşan etkinlikler için geçerli; ekran ekler
         return _message(data) ??
-            'Etkinliğe yapılmış başvurular olduğu için silinemiyor. '
-                'Bunun yerine durumunu "İptal edildi" yapabilirsiniz.';
+            'Etkinliğe yapılmış başvurular olduğu için silinemiyor.';
     }
     return describeApiError(e);
   }
