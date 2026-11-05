@@ -1,3 +1,4 @@
+using System.Data.Common;
 using AnkuApp.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -80,15 +81,28 @@ public sealed class ContentSyncService(
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
             catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or InvalidDataException or IOException
-                or System.Xml.XmlException or FormatException or ArgumentException or System.Text.RegularExpressions.RegexMatchTimeoutException)
+                or System.Xml.XmlException or FormatException or ArgumentException or System.Text.RegularExpressions.RegexMatchTimeoutException
+                or DbException or DbUpdateException)
             {
-                // Kaynak hatası mevcut veriyi silmez; son başarı zamanı korunur.
-                var error = ex is OperationCanceledException ? "Resmî kaynak zamanında yanıt vermedi." :
-                    "Resmî kaynak okunamadı veya biçimi değişti. Mevcut veriler korundu; elle giriş yapabilir veya tekrar yenileyebilirsiniz.";
+                // Kaynak veya kayıt hatası mevcut veriyi silmez (işlem geri alınır); son başarı zamanı korunur.
+                var error = ex switch
+                {
+                    OperationCanceledException => "Resmî kaynak zamanında yanıt vermedi.",
+                    DbException or DbUpdateException => "İçerik veritabanına kaydedilemedi. Mevcut veriler korundu; daha sonra tekrar yenileyin.",
+                    _ => "Resmî kaynak okunamadı veya biçimi değişti. Mevcut veriler korundu; elle giriş yapabilir veya tekrar yenileyebilirsiniz."
+                };
                 logger.LogWarning(ex, "İçerik kaynağı yenilenemedi: {Source}", kind);
-                await db.Database.ExecuteSqlInterpolatedAsync($"""
-                    UPDATE "ContentSyncStates" SET "LastError" = {error} WHERE "Id" = {kind}
-                    """, ct);
+                try
+                {
+                    await db.Database.ExecuteSqlInterpolatedAsync($"""
+                        UPDATE "ContentSyncStates" SET "LastError" = {error} WHERE "Id" = {kind}
+                        """, ct);
+                }
+                catch (Exception stateError) when (stateError is DbException or DbUpdateException)
+                {
+                    // Veritabanı erişilemiyorsa hata durumu yazılamaz; yanıt yine anlaşılır mesajla döner.
+                    logger.LogWarning(stateError, "İçerik kaynağı hata durumu kaydedilemedi: {Source}", kind);
+                }
                 return new(false, 0, 0, error);
             }
         }

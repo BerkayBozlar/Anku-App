@@ -1,6 +1,6 @@
 # 5. hafta — Berkay'ın duyuru ve yemekhane işleri
 
-Çalışma branch'i: `feature/week5-announcements-meals`. Teknik geliştirme hazır; Berkay'ın kendi testleri ve açık onayı olmadan `main`e merge edilmez. Flutter duyuru/menü ekranları Yiğithan'ın görevidir ve bu çalışmada yapılmadı.
+Backend ve MVC yönetimi `main`de. Flutter duyuru/menü ekranları Yiğithan'ın görevidir; mobil tarafı için [mobil README](../mobile/README.md#duyurular-ve-yemekhane).
 
 ## Hazır olanlar
 

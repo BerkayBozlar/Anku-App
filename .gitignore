@@ -480,3 +480,6 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Windows PowerShell modül önbelleği (yanlışlıkla depo köküne yazılabiliyor)
+Microsoft/Windows/PowerShell/
