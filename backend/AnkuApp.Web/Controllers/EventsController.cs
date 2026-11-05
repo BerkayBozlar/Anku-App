@@ -9,6 +9,7 @@ namespace AnkuApp.Web.Controllers;
 /// <summary>
 /// Etkinlik yönetimi. Yönetici tüm kulüplerin, kulüp yetkilisi yalnız kendi kulüplerinin
 /// etkinliklerini görür; sahiplik kontrolünü ayrıca API yapar (403).
+/// İşlem sayfaları <c>returnUrl</c> ile gelinen listeye (sekme, arama, kulüp, sayfa) döner.
 /// </summary>
 public class EventsController(EventsApiClient eventsApi, ClubsApiClient clubsApi) : PortalController
 {
@@ -57,6 +58,12 @@ public class EventsController(EventsApiClient eventsApi, ClubsApiClient clubsApi
             return await ApiFailureAsync(events);
         }
 
+        // Son sayfadaki son etkinlik silindiyse boş sayfa yerine son dolu sayfa gösterilir
+        if (events.Value is { Items.Count: 0, TotalCount: > 0 } page && query.Page > page.TotalPages)
+        {
+            return RedirectToAction(nameof(Index), new { pageNumber = page.TotalPages, search, clubId, past = past ? true : (bool?)null });
+        }
+
         return View(new EventListViewModel
         {
             Page = events.Value,
@@ -70,35 +77,35 @@ public class EventsController(EventsApiClient eventsApi, ClubsApiClient clubsApi
     }
 
     [HttpGet]
-    public async Task<IActionResult> Create(int? clubId, CancellationToken ct)
+    public async Task<IActionResult> Create(int? clubId, string? returnUrl, CancellationToken ct)
     {
         var model = new EventFormViewModel { ClubId = clubId };
-        return await FormViewAsync(model, ct);
+        return await FormViewAsync(model, returnUrl, ct);
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(EventFormViewModel model, CancellationToken ct)
+    public async Task<IActionResult> Create(EventFormViewModel model, string? returnUrl, CancellationToken ct)
     {
         model.Id = null;
         if (!ModelState.IsValid)
         {
-            return await FormViewAsync(model, ct);
+            return await FormViewAsync(model, returnUrl, ct);
         }
 
         var result = await eventsApi.CreateAsync(model.ToRequest(), ct);
         if (!result.IsSuccess)
         {
-            return TryAddFormErrors<EventFormViewModel>(result) ? await FormViewAsync(model, ct) : await ApiFailureAsync(result);
+            return TryAddFormErrors<EventFormViewModel>(result) ? await FormViewAsync(model, returnUrl, ct) : await ApiFailureAsync(result);
         }
 
         SetStatusMessage($"\"{result.Value!.Title}\" etkinliği eklendi.");
-        return RedirectToAction(nameof(Index), new { clubId = model.ClubId });
+        return RedirectToReturnUrl(returnUrl, () => RedirectToAction(nameof(Index), new { clubId = model.ClubId }));
     }
 
     /// <summary>Salt okunur ayrıntı; geçmiş etkinlikler buradan görüntülenir.</summary>
     [HttpGet]
-    public async Task<IActionResult> Details(int id, CancellationToken ct)
+    public async Task<IActionResult> Details(int id, string? returnUrl, CancellationToken ct)
     {
         var result = await eventsApi.GetAsync(id, ct);
         if (!result.IsSuccess)
@@ -106,11 +113,12 @@ public class EventsController(EventsApiClient eventsApi, ClubsApiClient clubsApi
             return await ApiFailureAsync(result, "Etkinlik bulunamadı.");
         }
 
+        SetReturnUrl(returnUrl);
         return View(result.Value);
     }
 
     [HttpGet]
-    public async Task<IActionResult> Edit(int id, CancellationToken ct)
+    public async Task<IActionResult> Edit(int id, string? returnUrl, CancellationToken ct)
     {
         var result = await eventsApi.GetAsync(id, ct);
         if (!result.IsSuccess)
@@ -122,34 +130,34 @@ public class EventsController(EventsApiClient eventsApi, ClubsApiClient clubsApi
         if (IsPast(result.Value!))
         {
             SetErrorMessage("Tarihi geçmiş etkinlikler düzenlenemez.");
-            return RedirectToAction(nameof(Details), new { id });
+            return RedirectToAction(nameof(Details), new { id, returnUrl = SafeReturnUrl(returnUrl) });
         }
 
-        return await FormViewAsync(EventFormViewModel.From(result.Value!), ct);
+        return await FormViewAsync(EventFormViewModel.From(result.Value!), returnUrl, ct);
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, EventFormViewModel model, CancellationToken ct)
+    public async Task<IActionResult> Edit(int id, EventFormViewModel model, string? returnUrl, CancellationToken ct)
     {
         model.Id = id;
         if (!ModelState.IsValid)
         {
-            return await FormViewAsync(model, ct);
+            return await FormViewAsync(model, returnUrl, ct);
         }
 
         var result = await eventsApi.UpdateAsync(id, model.ToRequest(), ct);
         if (!result.IsSuccess)
         {
-            return TryAddFormErrors<EventFormViewModel>(result) ? await FormViewAsync(model, ct) : await ApiFailureAsync(result, "Etkinlik bulunamadı.");
+            return TryAddFormErrors<EventFormViewModel>(result) ? await FormViewAsync(model, returnUrl, ct) : await ApiFailureAsync(result, "Etkinlik bulunamadı.");
         }
 
         SetStatusMessage("Etkinlik güncellendi.");
-        return RedirectToAction(nameof(Index), new { clubId = model.ClubId });
+        return RedirectToReturnUrl(returnUrl, () => RedirectToAction(nameof(Index), new { clubId = model.ClubId }));
     }
 
     [HttpGet]
-    public async Task<IActionResult> Delete(int id, CancellationToken ct)
+    public async Task<IActionResult> Delete(int id, string? returnUrl, CancellationToken ct)
     {
         var result = await eventsApi.GetAsync(id, ct);
         if (!result.IsSuccess)
@@ -157,20 +165,24 @@ public class EventsController(EventsApiClient eventsApi, ClubsApiClient clubsApi
             return await ApiFailureAsync(result, "Etkinlik bulunamadı.");
         }
 
+        SetReturnUrl(returnUrl);
         return View(result.Value);
     }
 
     [HttpPost, ActionName(nameof(Delete))]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteConfirmed(int id, int? clubId, bool past, CancellationToken ct)
+    public async Task<IActionResult> DeleteConfirmed(int id, int? clubId, bool past, string? returnUrl, CancellationToken ct)
     {
+        IActionResult BackToList() =>
+            RedirectToReturnUrl(returnUrl, () => RedirectToAction(nameof(Index), new { clubId, past = past ? true : (bool?)null }));
+
         var result = await eventsApi.DeleteAsync(id, ct);
         if (result.Status == ApiStatus.Conflict)
         {
             SetErrorMessage(result.Message ?? (past
                 ? "Etkinliğe yapılmış başvurular olduğu için silinemiyor."
                 : "Etkinliğe yapılmış başvurular olduğu için silinemiyor. Bunun yerine durumunu \"İptal edildi\" yapabilirsiniz."));
-            return RedirectToAction(nameof(Index), new { clubId, past });
+            return BackToList();
         }
         if (!result.IsSuccess)
         {
@@ -178,7 +190,7 @@ public class EventsController(EventsApiClient eventsApi, ClubsApiClient clubsApi
         }
 
         SetStatusMessage("Etkinlik silindi.");
-        return RedirectToAction(nameof(Index), new { clubId, past });
+        return BackToList();
     }
 
     private bool IsAdmin => User.IsInRole(Roles.Yonetici);
@@ -189,7 +201,7 @@ public class EventsController(EventsApiClient eventsApi, ClubsApiClient clubsApi
         clubsApi.ListAsync(mine: !IsAdmin, ct);
 
     /// <summary>Formu kulüp seçenekleriyle birlikte gösterir.</summary>
-    private async Task<IActionResult> FormViewAsync(EventFormViewModel model, CancellationToken ct)
+    private async Task<IActionResult> FormViewAsync(EventFormViewModel model, string? returnUrl, CancellationToken ct)
     {
         var clubs = await LoadClubsAsync(ct);
         if (clubs.Status == ApiStatus.Unauthorized)
@@ -217,6 +229,7 @@ public class EventsController(EventsApiClient eventsApi, ClubsApiClient clubsApi
             .Select(c => new SelectListItem(c.Name, c.Id.ToString()))
             .ToList();
 
+        SetReturnUrl(returnUrl);
         return View("Form", model);
     }
 }

@@ -35,11 +35,11 @@ else
                 @foreach (var club in Model.Clubs)
                 {
                     <tr>
-                        <td>
+                        <td class="text-break">
                             <div class="fw-semibold">@club.Name</div>
                             @if (!string.IsNullOrEmpty(club.Description))
                             {
-                                <div class="small text-muted text-truncate" style="max-width: 28rem;">@club.Description</div>
+                                <div class="small text-muted text-clamp-2">@club.Description</div>
                             }
                         </td>
                         <td class="d-none d-md-table-cell">
@@ -59,10 +59,12 @@ else
                                 <a href="@club.SocialMediaUrl" target="_blank" rel="noopener noreferrer">@club.SocialMediaUrl</a>
                             }
                         </td>
-                        <td class="text-end text-nowrap">
-                            <a class="btn btn-sm btn-outline-secondary" asp-controller="Events" asp-action="Index" asp-route-clubId="@club.Id">Etkinlikler</a>
-                            <a class="btn btn-sm btn-outline-primary" asp-action="Edit" asp-route-id="@club.Id">Düzenle</a>
-                            <a class="btn btn-sm btn-outline-danger" asp-action="Delete" asp-route-id="@club.Id">Sil</a>
+                        <td class="text-end">
+                            <div class="d-flex flex-wrap gap-1 justify-content-end">
+                                <a class="btn btn-sm btn-outline-secondary" asp-controller="Events" asp-action="Index" asp-route-clubId="@club.Id">Etkinlikler</a>
+                                <a class="btn btn-sm btn-outline-primary" asp-action="Edit" asp-route-id="@club.Id">Düzenle</a>
+                                <a class="btn btn-sm btn-outline-danger" asp-action="Delete" asp-route-id="@club.Id">Sil</a>
+                            </div>
                         </td>
                     </tr>
                 }

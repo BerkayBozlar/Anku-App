@@ -77,6 +77,16 @@ public abstract class ApiClientBase(HttpClient http, ILogger logger)
 
         using (response)
         {
+            // Yönlendirme izlenmez (Program.cs); oturumu kapatmak yerine ayar hatası gösterilir
+            var code = (int)response.StatusCode;
+            if (code is >= 300 and < 400)
+            {
+                logger.LogWarning("API isteği yönlendirildi ({Status}): {Url} -> {Location}",
+                    code, response.RequestMessage?.RequestUri, response.Headers.Location);
+                return (null, new ApiResult(ApiStatus.Failed,
+                    $"API isteği yönlendirildi ({code}). Api:BaseUrl ayarını API'nin doğrudan adresiyle (ör. https://...) değiştirin."));
+            }
+
             var (message, errors) = await ApiErrors.ReadAsync(response, ct);
             var status = response.StatusCode switch
             {

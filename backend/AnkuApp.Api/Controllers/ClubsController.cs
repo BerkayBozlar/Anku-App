@@ -1,5 +1,6 @@
 
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using System.Security.Claims;
 using AnkuApp.Api.Data;
 using AnkuApp.Api.Models;
@@ -17,6 +18,9 @@ public class ClubsController : ControllerBase
 {
     private const string AdminRole = "Yönetici";
     private const string ClubManagerRole = "Kulüp Yetkilisi";
+
+    private static readonly CultureInfo TurkishCulture =
+        CultureInfo.GetCultureInfo("tr-TR");
 
     private readonly AppDbContext _db;
     private readonly UserManager<ApplicationUser> _userManager;
@@ -161,9 +165,19 @@ public class ClubsController : ControllerBase
     {
         var name = request.Name.Trim();
 
-        var nameTaken = await _db.Clubs.AnyAsync(c =>
-            c.Id != club.Id &&
-            c.Name.ToLower() == name.ToLower());
+        // Büyük/küçük harf karşılaştırması veritabanının yerel ayarına
+        // bırakılmaz; kulüp sayısı az olduğu için bellekte Türkçe kurallarla yapılır.
+        var otherNames = await _db.Clubs
+            .AsNoTracking()
+            .Where(c => c.Id != club.Id)
+            .Select(c => c.Name)
+            .ToListAsync();
+
+        var nameTaken = otherNames.Any(other => string.Compare(
+            other,
+            name,
+            TurkishCulture,
+            CompareOptions.IgnoreCase) == 0);
 
         if (nameTaken)
         {
@@ -172,9 +186,18 @@ public class ClubsController : ControllerBase
                 "Bu adla bir kulüp zaten var.");
         }
 
+        var socialMediaUrl = NullIfEmpty(request.SocialMediaUrl);
+
+        if (socialMediaUrl != null && !IsHttpUrl(socialMediaUrl))
+        {
+            ModelState.AddModelError(
+                nameof(ClubRequest.SocialMediaUrl),
+                "Geçerli bir http veya https bağlantısı girin.");
+        }
+
         club.Name = name;
         club.Description = NullIfEmpty(request.Description);
-        club.SocialMediaUrl = NullIfEmpty(request.SocialMediaUrl);
+        club.SocialMediaUrl = socialMediaUrl;
 
         if (!canChangeManager)
         {
@@ -187,6 +210,14 @@ public class ClubsController : ControllerBase
         {
             club.AuthorizedUserId = null;
             club.AuthorizedUser = null;
+            return;
+        }
+
+        if (!new EmailAddressAttribute().IsValid(email))
+        {
+            ModelState.AddModelError(
+                nameof(ClubRequest.AuthorizedUserEmail),
+                "Geçerli bir e-posta adresi girin.");
             return;
         }
 
@@ -223,6 +254,11 @@ public class ClubsController : ControllerBase
 
     private static string? NullIfEmpty(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    // javascript: gibi şemalar portalda bağlantı olarak gösterilmesin
+    private static bool IsHttpUrl(string value) =>
+        Uri.TryCreate(value, UriKind.Absolute, out var uri) &&
+        (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
 }
 
 public record ClubResponse(
@@ -242,10 +278,9 @@ public class ClubRequest
     [MaxLength(2000)]
     public string? Description { get; set; }
 
-    [Url]
+    // Boş metin "alan yok" sayılır; biçim ApplyAsync içinde denetlenir
     [MaxLength(300)]
     public string? SocialMediaUrl { get; set; }
 
-    [EmailAddress]
     public string? AuthorizedUserEmail { get; set; }
 }

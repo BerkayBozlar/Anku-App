@@ -55,3 +55,13 @@ html {
 .navbar .nav-link.disabled .badge {
   font-weight: 400;
 }
+
+/* Uzun metni iki satırda keser; tablo hücresini genişletmez */
+.text-clamp-2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}

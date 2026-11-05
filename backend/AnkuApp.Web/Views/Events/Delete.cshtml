@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = "Etkinliği sil";
     var past = EventsController.IsPast(Model);
+    var returnUrl = ViewData[PortalController.ReturnUrlKey] as string;
 }
 
 <div class="row justify-content-center">
@@ -25,7 +26,8 @@
                 <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="d-flex flex-column flex-sm-row gap-2 justify-content-end">
                     <input type="hidden" name="clubId" value="@Model.ClubId" />
                     <input type="hidden" name="past" value="@(past ? "true" : "false")" />
-                    <a class="btn btn-outline-secondary" asp-action="Index" asp-route-past="@(past ? "true" : null)" asp-route-clubId="@Model.ClubId">Vazgeç</a>
+                    <input type="hidden" name="returnUrl" value="@returnUrl" />
+                    <a class="btn btn-outline-secondary" href="@(returnUrl ?? Url.Action("Index", new { past = past ? "true" : null, clubId = Model.ClubId }))">Vazgeç</a>
                     <button type="submit" class="btn btn-danger">Sil</button>
                 </form>
             </div>

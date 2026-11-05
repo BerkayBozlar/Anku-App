@@ -146,9 +146,9 @@ Başarılı yanıt: 201 Created, gövdede GET /api/clubs/{id} biçimindeki kulü
 
 Doğrulamalar:
 - name zorunludur, en fazla 100 karakterdir ve başka bir kulüple aynı olamaz (büyük/küçük harf duyarsız).
-- description en fazla 2000 karakterdir; socialMediaUrl geçerli bir mutlak bağlantı olmalı, en fazla 300 karakterdir.
+- description en fazla 2000 karakterdir; socialMediaUrl verilirse http veya https ile başlayan mutlak bir bağlantı olmalı (javascript: vb. reddedilir), en fazla 300 karakterdir. Boş metin "yok" sayılır.
 - authorizedUserEmail isteğe bağlıdır; verilirse kayıtlı ve Kulüp Yetkilisi rolünde bir kullanıcıya ait olmalıdır. Boş/null verilirse kulübün yetkilisi kaldırılır.
-- Hatalar 400 ValidationProblemDetails olarak, errors içinde alan adıyla (Name, AuthorizedUserEmail) döner.
+- Hatalar 400 ValidationProblemDetails olarak, errors içinde alan adıyla (Name, SocialMediaUrl, AuthorizedUserEmail) döner.
 PUT /api/clubs/{id}
 Yönetici veya kulübün kendi Kulüp Yetkilisi. İstek gövdesi POST ile aynıdır; Kulüp Yetkilisi gönderdiğinde authorizedUserEmail yok sayılır.
 

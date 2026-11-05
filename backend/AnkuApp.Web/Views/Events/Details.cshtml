@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = Model.Title;
     var past = EventsController.IsPast(Model);
+    var returnUrl = ViewData[PortalController.ReturnUrlKey] as string;
 }
 
 <div class="row justify-content-center">
@@ -10,7 +11,7 @@
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb small">
                 <li class="breadcrumb-item">
-                    <a asp-action="Index" asp-route-past="@(past ? "true" : null)" asp-route-clubId="@Model.ClubId">@(past ? "Geçmiş etkinlikler" : "Yaklaşan etkinlikler")</a>
+                    <a href="@(returnUrl ?? Url.Action("Index", new { past = past ? "true" : null, clubId = Model.ClubId }))">@(past ? "Geçmiş etkinlikler" : "Yaklaşan etkinlikler")</a>
                 </li>
                 <li class="breadcrumb-item active" aria-current="page">Ayrıntı</li>
             </ol>
@@ -43,9 +44,9 @@
             <div class="card-footer bg-transparent d-flex flex-column flex-sm-row gap-2 justify-content-end">
                 @if (!past)
                 {
-                    <a class="btn btn-outline-primary" asp-action="Edit" asp-route-id="@Model.Id">Düzenle</a>
+                    <a class="btn btn-outline-primary" asp-action="Edit" asp-route-id="@Model.Id" asp-route-returnUrl="@returnUrl">Düzenle</a>
                 }
-                <a class="btn btn-outline-danger" asp-action="Delete" asp-route-id="@Model.Id">Sil</a>
+                <a class="btn btn-outline-danger" asp-action="Delete" asp-route-id="@Model.Id" asp-route-returnUrl="@returnUrl">Sil</a>
             </div>
         </div>
     </div>

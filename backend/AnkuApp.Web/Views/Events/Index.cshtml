@@ -4,13 +4,15 @@
     var result = Model.Page;
     // Varsayılan sekme (yaklaşan) adreste görünmesin
     var pastRoute = Model.Past ? "true" : null;
+    // İşlem sayfaları bu listeye (sekme, arama, kulüp, sayfa) geri döner
+    var here = Context.Request.Path + Context.Request.QueryString;
 }
 
 <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 mb-3">
     <h1 class="h3 mb-0">@ViewData["Title"]</h1>
     @if (Model.Clubs.Count > 0)
     {
-        <a class="btn btn-anku" asp-action="Create" asp-route-clubId="@Model.ClubId">Etkinlik ekle</a>
+        <a class="btn btn-anku" asp-action="Create" asp-route-clubId="@Model.ClubId" asp-route-returnUrl="@here">Etkinlik ekle</a>
     }
 </div>
 
@@ -81,10 +83,16 @@ else if (result is null || result.Items.Count == 0)
         {
             <p class="mb-0">Tarihi geçmiş etkinlik yok.</p>
         }
+        else if (Model.Clubs.Count == 0)
+        {
+            @* Kulüp yokken etkinlik formu kullanılamaz; yalnız yönetici buraya kulüpsüz düşer *@
+            <p class="mb-2">Etkinlik eklemek için önce bir kulüp gerekir.</p>
+            <a class="btn btn-outline-secondary btn-sm" asp-controller="Clubs" asp-action="Create">Önce bir kulüp ekleyin</a>
+        }
         else
         {
             <p class="mb-2">Yaklaşan etkinlik yok.</p>
-            <a class="btn btn-outline-secondary btn-sm" asp-action="Create" asp-route-clubId="@Model.ClubId">Etkinlik ekle</a>
+            <a class="btn btn-outline-secondary btn-sm" asp-action="Create" asp-route-clubId="@Model.ClubId" asp-route-returnUrl="@here">Etkinlik ekle</a>
         }
     </div>
 }
@@ -111,7 +119,7 @@ else
                 {
                     <tr class="@(Model.Past ? "text-body-secondary" : "")">
                         <td>
-                            <a class="fw-semibold text-reset" asp-action="Details" asp-route-id="@e.Id">@e.Title</a>
+                            <a class="fw-semibold text-reset" asp-action="Details" asp-route-id="@e.Id" asp-route-returnUrl="@here">@e.Title</a>
                             <div class="small text-muted d-md-none">@e.ClubName</div>
                             <span class="badge @EventStatuses.BadgeClass(e.Status) d-sm-none">@EventStatuses.DisplayName(e.Status)</span>
                         </td>
@@ -124,13 +132,13 @@ else
                         <td class="text-end text-nowrap">
                             @if (Model.Past)
                             {
-                                <a class="btn btn-sm btn-outline-secondary" asp-action="Details" asp-route-id="@e.Id">Ayrıntı</a>
+                                <a class="btn btn-sm btn-outline-secondary" asp-action="Details" asp-route-id="@e.Id" asp-route-returnUrl="@here">Ayrıntı</a>
                             }
                             else
                             {
-                                <a class="btn btn-sm btn-outline-primary" asp-action="Edit" asp-route-id="@e.Id">Düzenle</a>
+                                <a class="btn btn-sm btn-outline-primary" asp-action="Edit" asp-route-id="@e.Id" asp-route-returnUrl="@here">Düzenle</a>
                             }
-                            <a class="btn btn-sm btn-outline-danger" asp-action="Delete" asp-route-id="@e.Id">Sil</a>
+                            <a class="btn btn-sm btn-outline-danger" asp-action="Delete" asp-route-id="@e.Id" asp-route-returnUrl="@here">Sil</a>
                         </td>
                     </tr>
                 }

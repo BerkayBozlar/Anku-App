@@ -15,6 +15,18 @@ public abstract class PortalController : Controller
 
     protected void SetErrorMessage(string message) => TempData[ErrorMessageKey] = message;
 
+    /// <summary>Görünümlerde "Vazgeç" bağlantısı ve formdaki gizli alan için.</summary>
+    public const string ReturnUrlKey = "ReturnUrl";
+
+    /// <summary>Yalnızca portal içi adresler kabul edilir (açık yönlendirme olmasın).</summary>
+    protected string? SafeReturnUrl(string? returnUrl) => Url.IsLocalUrl(returnUrl) ? returnUrl : null;
+
+    protected void SetReturnUrl(string? returnUrl) => ViewData[ReturnUrlKey] = SafeReturnUrl(returnUrl);
+
+    /// <summary>Kullanıcının geldiği listeye (sekme, arama, kulüp filtresi, sayfa) döner.</summary>
+    protected IActionResult RedirectToReturnUrl(string? returnUrl, Func<IActionResult> fallback) =>
+        SafeReturnUrl(returnUrl) is { } url ? LocalRedirect(url) : fallback();
+
     /// <summary>
     /// Formda gösterilebilecek hataları (doğrulama, çakışma, bağlantı) ModelState'e ekler.
     /// Oturum ya da yetki hatalarında false döner; o durumda <see cref="ApiFailureAsync"/> kullanılır.
