@@ -1,6 +1,8 @@
 @model EventDto
+@using AnkuApp.Web.Controllers
 @{
     ViewData["Title"] = "Etkinliği sil";
+    var past = EventsController.IsPast(Model);
 }
 
 <div class="row justify-content-center">
@@ -16,11 +18,14 @@
                     <dt class="col-4">Tarih</dt>
                     <dd class="col-8">@PortalTime.Format(Model.EventDate)</dd>
                 </dl>
-                <p class="mb-4">Bu işlem geri alınamaz. Başvurusu olan etkinlikler silinemez; onları "İptal edildi" durumuna alabilirsiniz.</p>
+                <p class="mb-4">
+                    Bu işlem geri alınamaz. Başvurusu olan etkinlikler silinemez@(past ? "." : "; onları \"İptal edildi\" durumuna alabilirsiniz.")
+                </p>
 
                 <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="d-flex flex-column flex-sm-row gap-2 justify-content-end">
                     <input type="hidden" name="clubId" value="@Model.ClubId" />
-                    <a class="btn btn-outline-secondary" asp-action="Index" asp-route-clubId="@Model.ClubId">Vazgeç</a>
+                    <input type="hidden" name="past" value="@(past ? "true" : "false")" />
+                    <a class="btn btn-outline-secondary" asp-action="Index" asp-route-past="@(past ? "true" : null)" asp-route-clubId="@Model.ClubId">Vazgeç</a>
                     <button type="submit" class="btn btn-danger">Sil</button>
                 </form>
             </div>

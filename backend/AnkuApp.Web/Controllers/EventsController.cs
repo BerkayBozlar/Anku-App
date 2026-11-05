@@ -14,7 +14,8 @@ public class EventsController(EventsApiClient eventsApi, ClubsApiClient clubsApi
 {
     private const int PageSize = 20;
 
-    public async Task<IActionResult> Index(int pageNumber = 1, string? search = null, int? clubId = null, CancellationToken ct = default)
+    /// <param name="past">true: tarihi geçmiş etkinlikler (en yeni önce); false: yaklaşanlar (en yakın önce).</param>
+    public async Task<IActionResult> Index(int pageNumber = 1, string? search = null, int? clubId = null, bool past = false, CancellationToken ct = default)
     {
         var clubs = await LoadClubsAsync(ct);
         if (clubs.Status == ApiStatus.Unauthorized)
@@ -23,7 +24,7 @@ public class EventsController(EventsApiClient eventsApi, ClubsApiClient clubsApi
         }
         if (!clubs.IsSuccess)
         {
-            return View(new EventListViewModel { LoadError = clubs.Message ?? "Kulüpler yüklenemedi." });
+            return View(new EventListViewModel { Past = past, LoadError = clubs.Message ?? "Kulüpler yüklenemedi." });
         }
 
         var available = clubs.Value!;
@@ -33,6 +34,7 @@ public class EventsController(EventsApiClient eventsApi, ClubsApiClient clubsApi
             {
                 return View(new EventListViewModel
                 {
+                    Past = past,
                     LoadError = "Hesabınıza atanmış bir kulüp yok. Yöneticiden kulübünüzü size atamasını isteyin."
                 });
             }
@@ -44,7 +46,11 @@ public class EventsController(EventsApiClient eventsApi, ClubsApiClient clubsApi
             }
         }
 
-        var query = new EventQuery(Math.Max(1, pageNumber), PageSize, search, clubId);
+        var now = DateTimeOffset.UtcNow;
+        var query = new EventQuery(Math.Max(1, pageNumber), PageSize, search, clubId,
+            From: past ? null : now,
+            To: past ? now : null,
+            Descending: past);
         var events = await eventsApi.ListAsync(query, ct);
         if (events.Status == ApiStatus.Unauthorized)
         {
@@ -56,6 +62,7 @@ public class EventsController(EventsApiClient eventsApi, ClubsApiClient clubsApi
             Page = events.Value,
             Search = search,
             ClubId = clubId,
+            Past = past,
             Clubs = available,
             CanListAllClubs = IsAdmin,
             LoadError = events.IsSuccess ? null : events.Message ?? "Etkinlikler yüklenemedi."
@@ -89,6 +96,19 @@ public class EventsController(EventsApiClient eventsApi, ClubsApiClient clubsApi
         return RedirectToAction(nameof(Index), new { clubId = model.ClubId });
     }
 
+    /// <summary>Salt okunur ayrıntı; geçmiş etkinlikler buradan görüntülenir.</summary>
+    [HttpGet]
+    public async Task<IActionResult> Details(int id, CancellationToken ct)
+    {
+        var result = await eventsApi.GetAsync(id, ct);
+        if (!result.IsSuccess)
+        {
+            return await ApiFailureAsync(result, "Etkinlik bulunamadı.");
+        }
+
+        return View(result.Value);
+    }
+
     [HttpGet]
     public async Task<IActionResult> Edit(int id, CancellationToken ct)
     {
@@ -96,6 +116,13 @@ public class EventsController(EventsApiClient eventsApi, ClubsApiClient clubsApi
         if (!result.IsSuccess)
         {
             return await ApiFailureAsync(result, "Etkinlik bulunamadı.");
+        }
+
+        // API geçmiş tarihi kabul etmediği için geçmiş etkinlik kaydedilemez
+        if (IsPast(result.Value!))
+        {
+            SetErrorMessage("Tarihi geçmiş etkinlikler düzenlenemez.");
+            return RedirectToAction(nameof(Details), new { id });
         }
 
         return await FormViewAsync(EventFormViewModel.From(result.Value!), ct);
@@ -135,13 +162,15 @@ public class EventsController(EventsApiClient eventsApi, ClubsApiClient clubsApi
 
     [HttpPost, ActionName(nameof(Delete))]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteConfirmed(int id, int? clubId, CancellationToken ct)
+    public async Task<IActionResult> DeleteConfirmed(int id, int? clubId, bool past, CancellationToken ct)
     {
         var result = await eventsApi.DeleteAsync(id, ct);
         if (result.Status == ApiStatus.Conflict)
         {
-            SetErrorMessage(result.Message ?? "Etkinliğe yapılmış başvurular olduğu için silinemiyor. Bunun yerine durumunu \"İptal edildi\" yapabilirsiniz.");
-            return RedirectToAction(nameof(Index), new { clubId });
+            SetErrorMessage(result.Message ?? (past
+                ? "Etkinliğe yapılmış başvurular olduğu için silinemiyor."
+                : "Etkinliğe yapılmış başvurular olduğu için silinemiyor. Bunun yerine durumunu \"İptal edildi\" yapabilirsiniz."));
+            return RedirectToAction(nameof(Index), new { clubId, past });
         }
         if (!result.IsSuccess)
         {
@@ -149,10 +178,12 @@ public class EventsController(EventsApiClient eventsApi, ClubsApiClient clubsApi
         }
 
         SetStatusMessage("Etkinlik silindi.");
-        return RedirectToAction(nameof(Index), new { clubId });
+        return RedirectToAction(nameof(Index), new { clubId, past });
     }
 
     private bool IsAdmin => User.IsInRole(Roles.Yonetici);
+
+    public static bool IsPast(EventDto e) => e.EventDate < DateTimeOffset.UtcNow;
 
     private Task<ApiResult<List<ClubDto>>> LoadClubsAsync(CancellationToken ct) =>
         clubsApi.ListAsync(mine: !IsAdmin, ct);

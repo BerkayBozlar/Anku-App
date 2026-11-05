@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace AnkuApp.Web.Services;
 
 /// <summary>Etkinlik liste ve ayrıntı yanıtı (docs/api-sozlesmesi.md).</summary>
@@ -28,7 +30,17 @@ public record EventRequest(
     int Capacity,
     string Status);
 
-public record EventQuery(int Page = 1, int PageSize = 20, string? Search = null, int? ClubId = null);
+/// <param name="From">Bu andan (dahil) sonraki etkinlikler.</param>
+/// <param name="To">Bu andan önceki etkinlikler.</param>
+/// <param name="Descending">En yeni tarih önce.</param>
+public record EventQuery(
+    int Page = 1,
+    int PageSize = 20,
+    string? Search = null,
+    int? ClubId = null,
+    DateTimeOffset? From = null,
+    DateTimeOffset? To = null,
+    bool Descending = false);
 
 /// <summary>AnkuApp.Api'nin <c>/api/events</c> uç noktalarını çağırır.</summary>
 public class EventsApiClient(HttpClient http, ILogger<EventsApiClient> logger) : ApiClientBase(http, logger)
@@ -48,6 +60,18 @@ public class EventsApiClient(HttpClient http, ILogger<EventsApiClient> logger) :
         {
             parameters.Add($"clubId={clubId}");
         }
+        if (query.From is DateTimeOffset from)
+        {
+            parameters.Add($"from={Utc(from)}");
+        }
+        if (query.To is DateTimeOffset to)
+        {
+            parameters.Add($"to={Utc(to)}");
+        }
+        if (query.Descending)
+        {
+            parameters.Add("order=desc");
+        }
 
         return GetAsync<EventPage>("api/events?" + string.Join('&', parameters), ct);
     }
@@ -63,4 +87,8 @@ public class EventsApiClient(HttpClient http, ILogger<EventsApiClient> logger) :
 
     public Task<ApiResult> DeleteAsync(int id, CancellationToken ct = default) =>
         DeleteAsync($"api/events/{id}", ct);
+
+    // 2026-11-05T09:30:00Z
+    private static string Utc(DateTimeOffset value) =>
+        Uri.EscapeDataString(value.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture));
 }

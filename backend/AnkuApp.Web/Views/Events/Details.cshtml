@@ -1,0 +1,52 @@
+@model EventDto
+@using AnkuApp.Web.Controllers
+@{
+    ViewData["Title"] = Model.Title;
+    var past = EventsController.IsPast(Model);
+}
+
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-9 col-xl-8">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb small">
+                <li class="breadcrumb-item">
+                    <a asp-action="Index" asp-route-past="@(past ? "true" : null)" asp-route-clubId="@Model.ClubId">@(past ? "Geçmiş etkinlikler" : "Yaklaşan etkinlikler")</a>
+                </li>
+                <li class="breadcrumb-item active" aria-current="page">Ayrıntı</li>
+            </ol>
+        </nav>
+
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                    <h1 class="h4 mb-0 me-auto">@Model.Title</h1>
+                    <span class="badge @EventStatuses.BadgeClass(Model.Status)">@EventStatuses.DisplayName(Model.Status)</span>
+                    @if (past)
+                    {
+                        <span class="badge text-bg-light border">Tarihi geçti</span>
+                    }
+                </div>
+
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Kulüp</dt>
+                    <dd class="col-sm-8">@(Model.ClubName ?? "-")</dd>
+                    <dt class="col-sm-4">Tarih</dt>
+                    <dd class="col-sm-8">@PortalTime.Format(Model.EventDate) <span class="text-muted small">(Türkiye saati)</span></dd>
+                    <dt class="col-sm-4">Kontenjan</dt>
+                    <dd class="col-sm-8">@(Model.Capacity?.ToString() ?? "-")</dd>
+                    <dt class="col-sm-4">Konum</dt>
+                    <dd class="col-sm-8">@(Model.CampusLocationName ?? "-")</dd>
+                    <dt class="col-sm-4">Açıklama</dt>
+                    <dd class="col-sm-8" style="white-space: pre-line;">@(string.IsNullOrWhiteSpace(Model.Description) ? "-" : Model.Description)</dd>
+                </dl>
+            </div>
+            <div class="card-footer bg-transparent d-flex flex-column flex-sm-row gap-2 justify-content-end">
+                @if (!past)
+                {
+                    <a class="btn btn-outline-primary" asp-action="Edit" asp-route-id="@Model.Id">Düzenle</a>
+                }
+                <a class="btn btn-outline-danger" asp-action="Delete" asp-route-id="@Model.Id">Sil</a>
+            </div>
+        </div>
+    </div>
+</div>

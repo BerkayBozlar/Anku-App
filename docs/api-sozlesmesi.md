@@ -172,6 +172,16 @@ Etkinlikleri filtreli ve sayfalı olarak listeler.
 
 Örnek istek:
 GET /api/events?page=1&pageSize=20&search=konser&clubId=12&from=2026-11-01T00:00:00Z
+
+Sorgu parametreleri (hepsi isteğe bağlı):
+- page (varsayılan 1), pageSize (varsayılan 20).
+- search: Başlıkta büyük/küçük harf duyarsız arama.
+- clubId: Yalnızca bu kulübün etkinlikleri.
+- from: eventDate >= from (UTC). Yaklaşan etkinlikler için from=şimdi.
+- to: eventDate < to (UTC). Geçmiş etkinlikler için to=şimdi.
+- order: asc (varsayılan, en yakın tarih önce) veya desc (en yeni tarih önce). Liste her zaman eventDate'e göre sıralanır; eşit tarihlerde id'ye göre.
+
+Portal ve mobil yönetim ekranları "Yaklaşan" sekmesi için from=<şimdi>&order=asc, "Geçmiş" sekmesi için to=<şimdi>&order=desc gönderir.
 Başarılı yanıt - 200 OK:
 {
   "items": [

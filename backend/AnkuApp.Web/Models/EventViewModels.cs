@@ -12,6 +12,9 @@ public class EventListViewModel
 
     public int? ClubId { get; init; }
 
+    /// <summary>Geçmiş sekmesi: tarihi geçmiş etkinlikler, salt okunur.</summary>
+    public bool Past { get; init; }
+
     /// <summary>Filtrede seçilebilen kulüpler; kulüp yetkilisi için yalnız kendi kulüpleri.</summary>
     public List<ClubDto> Clubs { get; init; } = [];
 

@@ -2,6 +2,8 @@
 @{
     ViewData["Title"] = Model.CanListAllClubs ? "Etkinlikler" : "Etkinliklerim";
     var result = Model.Page;
+    // Varsayılan sekme (yaklaşan) adreste görünmesin
+    var pastRoute = Model.Past ? "true" : null;
 }
 
 <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 mb-3">
@@ -12,9 +14,24 @@
     }
 </div>
 
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+        <a class="nav-link @(Model.Past ? "" : "active")" aria-current="@(Model.Past ? null : "page")"
+           asp-action="Index" asp-route-search="@Model.Search" asp-route-clubId="@Model.ClubId">Yaklaşan</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(Model.Past ? "active" : "")" aria-current="@(Model.Past ? "page" : null)"
+           asp-action="Index" asp-route-past="true" asp-route-search="@Model.Search" asp-route-clubId="@Model.ClubId">Geçmiş</a>
+    </li>
+</ul>
+
 @if (Model.Clubs.Count > 0)
 {
     <form method="get" asp-action="Index" class="row g-2 mb-3" role="search">
+        @if (Model.Past)
+        {
+            <input type="hidden" name="past" value="true" />
+        }
         <div class="col-12 col-md-5">
             <label for="search" class="visually-hidden">Ara</label>
             <input id="search" name="search" value="@Model.Search" class="form-control" placeholder="Başlıkta ara" />
@@ -43,7 +60,7 @@
             <button type="submit" class="btn btn-outline-primary">Filtrele</button>
             @if (!string.IsNullOrEmpty(Model.Search))
             {
-                <a class="btn btn-outline-secondary" asp-action="Index" asp-route-clubId="@Model.ClubId">Temizle</a>
+                <a class="btn btn-outline-secondary" asp-action="Index" asp-route-past="@pastRoute" asp-route-clubId="@Model.ClubId">Temizle</a>
             }
         </div>
     </form>
@@ -60,15 +77,23 @@ else if (result is null || result.Items.Count == 0)
         {
             <p class="mb-0">"@Model.Search" için etkinlik bulunamadı.</p>
         }
+        else if (Model.Past)
+        {
+            <p class="mb-0">Tarihi geçmiş etkinlik yok.</p>
+        }
         else
         {
-            <p class="mb-2">Henüz etkinlik yok.</p>
-            <a class="btn btn-outline-secondary btn-sm" asp-action="Create" asp-route-clubId="@Model.ClubId">İlk etkinliği ekle</a>
+            <p class="mb-2">Yaklaşan etkinlik yok.</p>
+            <a class="btn btn-outline-secondary btn-sm" asp-action="Create" asp-route-clubId="@Model.ClubId">Etkinlik ekle</a>
         }
     </div>
 }
 else
 {
+    @if (Model.Past)
+    {
+        <p class="small text-muted">Tarihi geçmiş etkinlikler düzenlenemez; ayrıntısı görüntülenebilir ve silinebilir.</p>
+    }
     <div class="table-responsive">
         <table class="table table-hover align-middle">
             <thead>
@@ -84,9 +109,9 @@ else
             <tbody>
                 @foreach (var e in result.Items)
                 {
-                    <tr>
+                    <tr class="@(Model.Past ? "text-body-secondary" : "")">
                         <td>
-                            <div class="fw-semibold">@e.Title</div>
+                            <a class="fw-semibold text-reset" asp-action="Details" asp-route-id="@e.Id">@e.Title</a>
                             <div class="small text-muted d-md-none">@e.ClubName</div>
                             <span class="badge @EventStatuses.BadgeClass(e.Status) d-sm-none">@EventStatuses.DisplayName(e.Status)</span>
                         </td>
@@ -97,7 +122,14 @@ else
                             <span class="badge @EventStatuses.BadgeClass(e.Status)">@EventStatuses.DisplayName(e.Status)</span>
                         </td>
                         <td class="text-end text-nowrap">
-                            <a class="btn btn-sm btn-outline-primary" asp-action="Edit" asp-route-id="@e.Id">Düzenle</a>
+                            @if (Model.Past)
+                            {
+                                <a class="btn btn-sm btn-outline-secondary" asp-action="Details" asp-route-id="@e.Id">Ayrıntı</a>
+                            }
+                            else
+                            {
+                                <a class="btn btn-sm btn-outline-primary" asp-action="Edit" asp-route-id="@e.Id">Düzenle</a>
+                            }
                             <a class="btn btn-sm btn-outline-danger" asp-action="Delete" asp-route-id="@e.Id">Sil</a>
                         </td>
                     </tr>
@@ -112,10 +144,10 @@ else
             <span class="small text-muted">Toplam @result.TotalCount etkinlik, sayfa @result.Page / @result.TotalPages</span>
             <ul class="pagination mb-0">
                 <li class="page-item @(result.Page <= 1 ? "disabled" : "")">
-                    <a class="page-link" asp-action="Index" asp-route-pageNumber="@(result.Page - 1)" asp-route-search="@Model.Search" asp-route-clubId="@Model.ClubId">Önceki</a>
+                    <a class="page-link" asp-action="Index" asp-route-pageNumber="@(result.Page - 1)" asp-route-past="@pastRoute" asp-route-search="@Model.Search" asp-route-clubId="@Model.ClubId">Önceki</a>
                 </li>
                 <li class="page-item @(result.Page >= result.TotalPages ? "disabled" : "")">
-                    <a class="page-link" asp-action="Index" asp-route-pageNumber="@(result.Page + 1)" asp-route-search="@Model.Search" asp-route-clubId="@Model.ClubId">Sonraki</a>
+                    <a class="page-link" asp-action="Index" asp-route-pageNumber="@(result.Page + 1)" asp-route-past="@pastRoute" asp-route-search="@Model.Search" asp-route-clubId="@Model.ClubId">Sonraki</a>
                 </li>
             </ul>
         </nav>
