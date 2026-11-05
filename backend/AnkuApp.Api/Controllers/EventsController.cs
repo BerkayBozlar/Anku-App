@@ -28,13 +28,26 @@ public class EventsController : ControllerBase
         [FromQuery] int pageSize = 20,
         [FromQuery] string? search = null,
         [FromQuery] int? clubId = null,
-        [FromQuery] DateTimeOffset? from = null)
+        [FromQuery] DateTimeOffset? from = null,
+        [FromQuery] DateTimeOffset? to = null,
+        [FromQuery] string? order = null)
     {
         if (page < 1 || pageSize < 1 || pageSize > 100)
         {
             return BadRequest(new
             {
                 message = "Sayfalama bilgileri geçersiz."
+            });
+        }
+
+        var sortOrder = order?.Trim();
+        if (!string.IsNullOrEmpty(sortOrder) &&
+            !string.Equals(sortOrder, "asc", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(sortOrder, "desc", StringComparison.OrdinalIgnoreCase))
+        {
+            return BadRequest(new
+            {
+                message = "Sıralama asc veya desc olmalıdır."
             });
         }
 
@@ -62,11 +75,20 @@ public class EventsController : ControllerBase
                 e.EventDate >= fromUtc);
         }
 
+        if (to.HasValue)
+        {
+            var toUtc = to.Value.UtcDateTime;
+            query = query.Where(e => e.EventDate < toUtc);
+        }
+
         var totalCount = await query.CountAsync();
 
-        var items = await query
-            .OrderBy(e => e.EventDate)
-            .ThenBy(e => e.Id)
+        var orderedQuery = string.Equals(
+            sortOrder, "desc", StringComparison.OrdinalIgnoreCase)
+            ? query.OrderByDescending(e => e.EventDate).ThenByDescending(e => e.Id)
+            : query.OrderBy(e => e.EventDate).ThenBy(e => e.Id);
+
+        var items = await orderedQuery
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Select(e => new

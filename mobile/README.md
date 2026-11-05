@@ -16,7 +16,7 @@ AnküApp'in öğrenci tarafı. Veriye yalnızca `backend/AnkuApp.Api` üzerinden
    dotnet run --project backend/AnkuApp.Api --launch-profile http
    ```
 
-   API `http://localhost:5098` adresinde açılır, `GET /api/health` → `{"status":"ok"}`.
+   API `http://localhost:5080` adresinde açılır, `GET /api/health` → `{"status":"ok"}`.
 
 2. Emülatörü aç, sonra uygulamayı çalıştır:
 
@@ -26,10 +26,10 @@ AnküApp'in öğrenci tarafı. Veriye yalnızca `backend/AnkuApp.Api` üzerinden
    flutter run
    ```
 
-Emülatör bilgisayarın `localhost`'una `10.0.2.2` üzerinden ulaşır; varsayılan API adresi `http://10.0.2.2:5098`. Gerçek telefonda ya da farklı bir portta:
+Emülatör bilgisayarın `localhost`'una `10.0.2.2` üzerinden ulaşır; varsayılan API adresi `http://10.0.2.2:5080`. Gerçek telefonda ya da farklı bir portta:
 
 ```bash
-flutter run --dart-define=API_BASE_URL=http://192.168.1.20:5098
+flutter run --dart-define=API_BASE_URL=http://192.168.1.20:5080
 ```
 
 Ana sayfadaki "API bağlantısı" kartı `/api/health` sonucunu gösterir; yenile düğmesiyle tekrar denenir.

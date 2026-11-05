@@ -42,7 +42,7 @@ Belgelerde kesin olan tarihler: başlangıç **21 Ekim**, ilk video ve iskelet *
 - [x] **B** API sözleşmesi: Flutter'ın çağıracağı ilk uç noktalar (auth, events) — istek/yanıt örnekleriyle [api-sozlesmesi.md](api-sozlesmesi.md)
 - [x] **B** İlk video (her iki ders için, B lider)
 - [x] **Y** `mobile/` altında Flutter projesi (`tr.edu.ankara.anku_app`), Android emülatörde çalışan ilk ekranlar: ana sayfa, 7 modül kartı, alt gezinme
-- [x] **Y** Web API bağlantı ayarı: `API_BASE_URL` (emülatörde `http://10.0.2.2:5098`), dio ile `/api/health` sonucu ana sayfadaki kartta
+- [x] **Y** Web API bağlantı ayarı: `API_BASE_URL` (emülatörde `http://10.0.2.2:5080`), dio ile `/api/health` sonucu ana sayfadaki kartta
 - [x] **Y** Harita denemesi: maplibre_gl + OSM ile Tandoğan merkezli harita ekranı
 - [x] **B+Y** Görev panosu (bu belge)
 - [x] **B+Y** Kabul ölçütleri: yedi modülün her biri için "bitti" tanımı (aşağıdaki modül listesine birer satır)
