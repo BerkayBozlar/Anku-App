@@ -5,6 +5,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
+using Microsoft.OpenApi;
+using Microsoft.AspNetCore.Authorization;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -53,7 +56,57 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+
+builder.Services.AddOpenApi(options =>
+{
+    // Swagger'da Bearer JWT kimlik doğrulamasını tanımla.
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    {
+        document.Components ??= new OpenApiComponents();
+
+        document.Components.SecuritySchemes ??=
+            new Dictionary<string, IOpenApiSecurityScheme>();
+
+        document.Components.SecuritySchemes["Bearer"] =
+            new OpenApiSecurityScheme
+            {
+                Type = SecuritySchemeType.Http,
+                Scheme = "bearer",
+                BearerFormat = "JWT"
+            };
+
+        return Task.CompletedTask;
+    });
+
+    // Yalnızca [Authorize] gerektiren endpoint'leri işaretle.
+    options.AddOperationTransformer((operation, context, cancellationToken) =>
+    {
+        var metadata =
+            context.Description.ActionDescriptor.EndpointMetadata;
+
+        var requiresAuth = metadata
+            .OfType<IAuthorizeData>()
+            .Any();
+
+        var allowsAnonymous = metadata
+            .OfType<IAllowAnonymous>()
+            .Any();
+
+        if (requiresAuth && !allowsAnonymous)
+        {
+            operation.Security ??= [];
+
+            operation.Security.Add(new OpenApiSecurityRequirement
+            {
+                [new OpenApiSecuritySchemeReference(
+                    "Bearer", context.Document)] = []
+            });
+        }
+
+        return Task.CompletedTask;
+    });
+});
+
 
 var app = builder.Build();
 
@@ -169,10 +222,16 @@ if (app.Environment.IsDevelopment())
 }
 
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint(
+            "/openapi/v1.json",
+            "AnküApp API v1");
+    });
 }
 
 app.UseHttpsRedirection();

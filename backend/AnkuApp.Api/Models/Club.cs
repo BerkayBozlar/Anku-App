@@ -10,4 +10,6 @@ public class Club
 
     public string? AuthorizedUserId { get; set; }
     public ApplicationUser? AuthorizedUser { get; set; }
+    public ICollection<Event> Events { get; set; }
+    = new List<Event>();
 }
