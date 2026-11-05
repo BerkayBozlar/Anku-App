@@ -227,7 +227,7 @@ void main() {
       );
       expect(find.text('Bugün'), findsOneWidget);
       expect(find.text('Ezogelin Çorbası'), findsOneWidget);
-      expect(find.text('Toplam 1180 kcal'), findsOneWidget);
+      expect(find.text('Toplam 1180 kkal'), findsOneWidget);
       expect(
         find.text(
           '${weekdayName(_addDays(today, 1))}, '
@@ -284,6 +284,32 @@ void main() {
     await tester.tap(find.text('Tekrar dene'));
     await tester.pumpAndSettle();
     expect(find.text('Ezogelin Çorbası'), findsOneWidget);
+  });
+
+  testWidgets('yenileme başarısız olursa menü korunur ve mesaj gösterilir', (
+    tester,
+  ) async {
+    final api = _Api();
+    await _openFromHome(tester, api, 'Yemekhane');
+    expect(find.text('Ezogelin Çorbası'), findsOneWidget);
+
+    api.failMenus = true;
+    await tester.fling(
+      _scrollableOf(MealMenuScreen),
+      const Offset(0, 400),
+      1000,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ezogelin Çorbası'), findsOneWidget);
+    expect(find.text('Tekrar dene'), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byType(SnackBar),
+        matching: find.text('Menü kaynağına şu anda ulaşılamıyor.'),
+      ),
+      findsOneWidget,
+    );
   });
 
   for (final width in [320.0, 1024.0]) {

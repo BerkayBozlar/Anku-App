@@ -40,11 +40,17 @@ class _MealMenuScreenState extends ConsumerState<MealMenuScreen> {
           constraints: const BoxConstraints(maxWidth: 760),
           child: RefreshIndicator(
             onRefresh: () async {
+              final hadMenu = range.hasValue;
               try {
                 ref.invalidate(provider);
                 await ref.read(provider.future);
-              } on ApiException {
-                // Hata, aşağıdaki yeniden deneme ekranında gösterilir.
+              } on ApiException catch (error) {
+                // Menü ekrandaysa korunur ve hata alt bilgi olarak gösterilir;
+                // ilk yükleme hatası aşağıdaki yeniden deneme ekranındadır.
+                if (hadMenu && context.mounted) {
+                  ScaffoldMessenger.of(context)
+                      .showSnackBar(SnackBar(content: Text(error.message)));
+                }
               }
             },
             child: ListView(
@@ -70,6 +76,7 @@ class _MealMenuScreenState extends ConsumerState<MealMenuScreen> {
                 ),
                 const SizedBox(height: 16),
                 ...range.when(
+                  skipError: true,
                   loading: () => const [
                     Padding(
                       padding: EdgeInsets.all(32),
@@ -254,7 +261,7 @@ class _DayCard extends StatelessWidget {
               if (menu.totalCalories != null) ...[
                 const SizedBox(height: 8),
                 Text(
-                  'Toplam ${menu.totalCalories} kcal',
+                  'Toplam ${menu.totalCalories} kkal',
                   style: theme.textTheme.labelMedium,
                 ),
               ],
