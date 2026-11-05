@@ -72,7 +72,7 @@ Belgelerde kesin olan tarihler: başlangıç **21 Ekim**, ilk video ve iskelet *
 
 ## Hafta 4 — 18 Kasım ilk gösterim
 
-- [ ] **B** Backend kararlılığı ve demo verisi
+- [x] **B** Backend kararlılığı ve demo verisi: Development'a özel `--seed-demo`, 2 kulüp/2 konum/6 etkinlik, sayfalama taşması düzeltmesi ve 45 API/MVC entegrasyon kontrolü ([rehber](demo-hafta4.md))
 - [x] **Y** Flutter'da öğrenci için kulüp-etkinlik akışı (liste → detay): Keşfet, arama, kulüp filtresi, yaklaşan/geçmiş ve yayın durumu
 - [x] **Y** Tandoğan haritasının temel sürümü: OSM, yakınlaştırma/kaydırma ve kampüse dönüş
 - [x] **Y** Flutter/MVC entegrasyonu: ortak API, yayın görünürlüğü ve [otomatik entegrasyon kontrolü](../scripts/Test-Week4Integration.ps1)

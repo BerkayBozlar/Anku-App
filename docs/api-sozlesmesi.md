@@ -1,7 +1,7 @@
 AnküApp API Sözleşmesi
-Durum: 2. hafta backend uygulamasına göre güncellenmiştir (1 Kasım 2026).
+Durum: 4. hafta backend ve entegrasyon uygulamasına göre güncellenmiştir (5 Kasım 2026).
 Kapsam: ASP.NET Core Web API ile Flutter ve MVC istemcilerinin veri alışverişi.
-Kaynak ayrımı: Kimlik doğrulama ve sağlık kontrolü bölümleri şu anda yazılmış ve yerel ortamda test edilmiş endpoint'leri; Etkinlikler bölümü ise 3. hafta için planlanan, henüz uygulanmamış sözleşmeyi gösterir.
+Kimlik doğrulama, sağlık kontrolü, kulüpler ve etkinlikler bölümleri uygulanmış uç noktaları anlatır. API/MVC entegrasyon kontrolü ve demo verisi için docs/demo-hafta4.md belgesini kullanın.
 Temel adresler ve ortak kurallar
 - API'nin mevcut yerel çalıştırma adresi: http://localhost:5080
 - API ile aynı bilgisayarda çalışan standart Android emülatörünün ana makine adresi: http://10.0.2.2:5080
@@ -102,10 +102,10 @@ Geçerli token olmadan istek 401 Unauthorized döner. Bu endpoint'te fullName bu
 Geliştirme ortamı test hesapları
 - admin@ankuapp.test: Yönetici
 - kulup@ankuapp.test: Kulüp Yetkilisi
-- ogrenci.test@example.com: Öğrenci (elle kayıt testi sırasında oluşturulduysa)
-İlk iki hesap yalnızca geliştirme ortamında seed işlemiyle oluşturulur. Şifreleri yerel User Secrets içinde Seed:AdminPassword ve Seed:ClubPassword olarak saklanır; GitHub'a, belgeye veya koda yazılmamalıdır. Girişleri normal /api/auth/login üzerinden yapılır.
+- ogrenci@ankuapp.test: Öğrenci
+Üç hesap yalnızca geliştirme ortamında ilgili parola ayarları mevcutsa seed işlemiyle oluşturulur. Şifreleri yerel User Secrets içinde Seed:AdminPassword, Seed:ClubPassword ve Seed:StudentPassword olarak saklanır; GitHub'a, belgeye veya koda yazılmamalıdır. Girişleri normal /api/auth/login üzerinden yapılır. Mevcut hesapların parolaları seed sırasında değiştirilmez.
 
-Entegrasyon notu: API'nin çalışması MVC portalında girişin otomatik olarak tamamlandığı anlamına gelmez; MVC tarafının bu kullanıcıları aynı Identity altyapısıyla doğrulayabildiği ayrıca test edilmelidir. Flutter JWT'yi güvenli biçimde saklamalıdır.
+Entegrasyon: MVC portalı API'nin login ucundan JWT alıp cookie oturumu oluşturur; sonraki API istekleri bu JWT ile gider. Öğrenci portal yönetimine giremez. Flutter JWT'yi flutter_secure_storage içinde saklar. Üç rolün API/MVC akışı scripts/Test-Week4Integration.ps1 ile doğrulanır.
 Kulüpler — UYGULANDI (3. hafta)
 Tüm uç noktalar JWT ister. MVC portalının kulüp yönetimi ve etkinlik formlarındaki kulüp seçimi bu uç noktaları kullanır.
 
@@ -159,7 +159,7 @@ Yalnızca Yönetici. Başarılı yanıt: 204 No Content.
 Hatalar:
 - 404 Not Found: Kulüp bulunamadı.
 - 409 Conflict: Kulübe bağlı kayıtlar (ör. etkinlikler) olduğu için silinemiyor - { "message": "Kulübe bağlı kayıtlar olduğu için silinemiyor." }. Bunun için Events → Clubs yabancı anahtarı silmede Restrict olmalıdır; Cascade olursa kulüple birlikte etkinlikleri de silinir.
-Etkinlikler — 3. HAFTA İÇİN PLANLANAN SÖZLEŞME (HENÜZ UYGULANMADI)
+Etkinlikler — UYGULANDI
 Etkinlik durumları Draft, Published ve Cancelled değerlerinden biridir.
 
 Yetkilendirme kuralları:
@@ -174,7 +174,7 @@ Etkinlikleri filtreli ve sayfalı olarak listeler.
 GET /api/events?page=1&pageSize=20&search=konser&clubId=12&from=2026-11-01T00:00:00Z
 
 Sorgu parametreleri (hepsi isteğe bağlı):
-- page (varsayılan 1), pageSize (varsayılan 20).
+- page (varsayılan 1, en az 1), pageSize (varsayılan 20, 1–100). Hesaplanan sayfa başlangıcı int.MaxValue değerini aşarsa 400 döner.
 - search: Başlıkta büyük/küçük harf duyarsız arama.
 - clubId: Yalnızca bu kulübün etkinlikleri.
 - from: eventDate >= from (UTC). Yaklaşan etkinlikler için from=şimdi.
@@ -206,19 +206,6 @@ Başarılı yanıt - 200 OK:
   "pageSize": 20,
   "totalCount": 1
 }
-### GET /api/clubs
-
-JWT gerektirir.
-
-Başarılı yanıt: 200 OK
-
-[
-  {
-    "id": 1,
-    "name": "AnküApp Test Kulübü",
-    "description": "Etkinlik API testleri için örnek kulüp"
-  }
-]
 GET /api/events/{id}
 Tek etkinliğin ayrıntısını döndürür.
 
@@ -262,7 +249,7 @@ Başarılı yanıt - 201 Created:
 }
 Doğrulamalar:
 - title zorunludur ve en fazla 200 karakterdir.
-- eventDate geçmişte olamaz.
+- eventDate gelecekte olmalıdır (UTC'ye dönüştürülerek saklanır). Geçmiş demo kayıtları yalnızca veri hazırlama komutuyla oluşturulur; normal POST/PUT geçmiş tarihi reddeder.
 - capacity sıfırdan büyük olmalıdır.
 - clubId mevcut olmalıdır.
 - campusLocationId verildiyse mevcut olmalıdır.
@@ -283,10 +270,10 @@ Başarılı yanıt: 204 No Content.
 Hatalar:
 - 403 Forbidden: Kullanıcının silme yetkisi yok.
 - 404 Not Found: Etkinlik bulunamadı.
-- 409 Conflict: Etkinlik ilişkili başvurular nedeniyle doğrudan silinemiyor.
+Not: Katılım tablosu ve ilişkili başvuru nedeniyle 409 davranışı 8. haftanın kapsamındadır; mevcut etkinlik silme işleminde henüz bu kontrol yoktur.
 Uygulama ve entegrasyon sırası
 1. 2. hafta — yapıldı: PostgreSQL/Identity, roller, register, login, me, JWT doğrulama ve temel yetki testleri.
-2. 2. hafta — entegrasyon testi bekliyor: Flutter/MVC istemcilerinde gerçek API'ye karşı oturum açma ve rol bazlı ekranlar; geliştirici makinelerinde veritabanı / User Secrets kurulumu veya uygun ağ erişimi.
-3. 3. hafta — plan: Events modeli, ilişkiler, DTO'lar, doğrulamalar ve GET/POST/PUT/DELETE endpoint'leri.
-4. Plan: Swagger/OpenAPI üzerinden uç noktaları ve yanıt kodlarını doğrulama; Flutter yönetim ekranlarında Events CRUD işlemlerini test etme.
+2. 2–4. hafta — uygulandı: Flutter/MVC oturumları ve rol bazlı akışlar. Her geliştirici kendi veritabanı ve User Secrets ayarlarını yapmalıdır.
+3. 3. hafta — uygulandı: Events modeli, Club-Events 1:N ilişkisi, DTO'lar, doğrulamalar, GET/POST/PUT/DELETE ve Development ortamında /swagger ile /openapi/v1.json.
+4. 4. hafta — doğrulandı: Tekrar çalıştırılabilir --seed-demo komutu, JWT/Swagger, rol ve sahiplik sınırları, MVC/API veri paylaşımı, yayın görünürlüğü, saat dönüşümü ve doğrulama testleri. Demo verisi dahil 45 otomatik entegrasyon kontrolü.
 Yeni endpoint veya yanıt biçimi eklendiğinde belge gerçek Controllers ve DTO koduyla birlikte güncellenmelidir.

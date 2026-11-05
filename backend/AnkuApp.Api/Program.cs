@@ -8,7 +8,13 @@ using System.Security.Claims;
 using Microsoft.OpenApi;
 using Microsoft.AspNetCore.Authorization;
 
-var builder = WebApplication.CreateBuilder(args);
+// Ayrı komut, demo verisini sunucuyu başlatmadan hazırlar.
+var seedDemo = args.Contains("--seed-demo", StringComparer.Ordinal);
+var builder = WebApplication.CreateBuilder(args.Where(arg => arg != "--seed-demo").ToArray());
+if (seedDemo && !builder.Environment.IsDevelopment())
+{
+    throw new InvalidOperationException("Demo verisi yalnızca Development ortamında hazırlanabilir.");
+}
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
@@ -228,6 +234,14 @@ if (app.Environment.IsDevelopment())
     }
 }
 
+
+if (seedDemo)
+{
+    using var scope = app.Services.CreateScope();
+    await DemoDataSeeder.SeedAsync(scope.ServiceProvider);
+    await app.DisposeAsync();
+    return;
+}
 
 if (app.Environment.IsDevelopment())
 {

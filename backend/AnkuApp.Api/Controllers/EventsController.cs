@@ -33,7 +33,8 @@ public class EventsController : ControllerBase
         [FromQuery] string? order = null,
         [FromQuery] string? status = null)
     {
-        if (page < 1 || pageSize < 1 || pageSize > 100)
+        var offset = ((long)page - 1) * pageSize;
+        if (page < 1 || pageSize < 1 || pageSize > 100 || offset > int.MaxValue)
         {
             return BadRequest(new
             {
@@ -101,7 +102,7 @@ public class EventsController : ControllerBase
             : query.OrderBy(e => e.EventDate).ThenBy(e => e.Id);
 
         var items = await orderedQuery
-            .Skip((page - 1) * pageSize)
+            .Skip((int)offset)
             .Take(pageSize)
             .Select(e => new
             {

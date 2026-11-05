@@ -12,3 +12,16 @@ Ankara University Campus Management Web Portal and Flutter Mobile Application
 [Haftalık Proje Videoları – Google Drive](https://drive.google.com/drive/folders/1nl9wWlVjwhCP9dYb0tzGQ9k32NIIHGIA?usp=sharing)
 
 Her hafta yapılan geliştirmeler, görev dağılımı ve çalışan uygulamanın gösterimi bu bağlantıdan ulaşabilirsiniz.
+
+## Yerel çalıştırma
+
+Backend ve portal .NET 10, veri katmanı PostgreSQL kullanır. Bağlantı dizesi, JWT ayarları ve demo parolalarını API projesinin yerel user-secrets ayarlarında tanımlayın; [kurulum ve demo rehberi](docs/demo-hafta4.md) adımları içerir.
+
+```powershell
+dotnet tool restore
+dotnet ef database update --project backend/AnkuApp.Api -- --environment Development
+dotnet run --project backend/AnkuApp.Api --launch-profile http -- --seed-demo
+dotnet run --project backend/AnkuApp.Api --launch-profile http
+```
+
+`--seed-demo` yalnızca Development ortamında çalışır; eksik demo verisini ekleyip çıkar. İkinci terminalde `dotnet run --project backend/AnkuApp.Web --launch-profile http` ile portalı açın. API `http://localhost:5080`, Swagger `http://localhost:5080/swagger`, portal `http://localhost:5025` adresindedir. Flutter kurulumu için [mobil README](mobile/README.md).

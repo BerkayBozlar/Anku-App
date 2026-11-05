@@ -1,6 +1,7 @@
 param(
     [string]$ApiBaseUrl = 'http://localhost:5080',
-    [string]$PortalBaseUrl = 'http://localhost:5025'
+    [string]$PortalBaseUrl = 'http://localhost:5025',
+    [switch]$CheckDemoData
 )
 
 # API ve MVC ayakta olmali. Parolalar yalnizca yerel user-secrets'ten okunur.
@@ -68,17 +69,74 @@ $studentPassword = Read-Secret 'Seed:StudentPassword'
 $student = Api POST '/api/auth/login' -Payload @{ email = 'ogrenci@ankuapp.test'; password = $studentPassword }
 Assert-Check ($student.user.email -eq 'ogrenci@ankuapp.test') 'Ogrenci girisi'
 $clubId = $null
+$clubIds = @()
 
 try {
+    $health = Api GET '/api/health'
+    Assert-Check ($health.status -eq 'ok') 'API saglik kontrolu'
+    Api GET '/api/events' -Expected 401 | Out-Null
+    Api GET '/api/clubs' -Expected 401 | Out-Null
+    Api GET '/api/auth/me' 'invalid-token' -Expected 401 | Out-Null
+    Assert-Check $true 'Oturumsuz ve gecersiz JWT ile korumali verilere erisilemez'
+    $me = Api GET '/api/auth/me' $manager.accessToken
+    Assert-Check ($me.roles -contains $manager.user.roles[0]) 'JWT rol bilgisi me uc noktasinda korunur'
+    $openapi = Api GET '/openapi/v1.json'
+    Assert-Check ($openapi.components.securitySchemes.Bearer.scheme -eq 'bearer' -and
+        $openapi.paths.'/api/events'.get.security[0].PSObject.Properties.Name -contains 'Bearer') 'OpenAPI etkinlikler icin Bearer JWT tanimlar'
+    $swagger = Invoke-WebRequest "$ApiBaseUrl/swagger/index.html" -UseBasicParsing
+    Assert-Check ($swagger.StatusCode -eq 200 -and $swagger.Content.Contains('swagger-ui')) 'Swagger UI acilir'
+
+    foreach ($query in @('page=0', 'pageSize=0', 'pageSize=101', 'page=2147483647&pageSize=100', 'order=invalid')) {
+        Api GET "/api/events?$query" $admin.accessToken -Expected 400 | Out-Null
+        Assert-Check $true "Gecersiz liste sorgusu reddedilir: $query"
+    }
+
     $tag = [Guid]::NewGuid().ToString('N').Substring(0, 8)
     $club = Api POST '/api/clubs' $admin.accessToken @{
         name = "Week4 Club $tag"; description = 'Gecici entegrasyon kaydi'; authorizedUserEmail = 'kulup@ankuapp.test'
     } -Expected 201
     $clubId = [int]$club.id
+    $clubIds += $clubId
     $date = [DateTimeOffset]::UtcNow.AddDays(2)
     $draft = Api POST '/api/events' $admin.accessToken @{
         clubId = $clubId; title = "Week4 Draft $tag"; eventDate = $date.ToString('o'); capacity = 30; status = 'Draft'
     } -Expected 201
+    $foreignClub = Api POST '/api/clubs' $admin.accessToken @{
+        name = "Week4 Other Club $tag"; description = 'Yetki siniri icin gecici kayit'
+    } -Expected 201
+    $clubIds += [int]$foreignClub.id
+    $foreignPayload = @{
+        clubId = $foreignClub.id; title = "Week4 Other Event $tag"; eventDate = $date.ToString('o'); capacity = 30; status = 'Published'
+    }
+    $foreignEvent = Api POST '/api/events' $admin.accessToken $foreignPayload -Expected 201
+    Api POST '/api/events' $manager.accessToken $foreignPayload -Expected 403 | Out-Null
+    Api PUT "/api/events/$($foreignEvent.id)" $manager.accessToken $foreignPayload -Expected 403 | Out-Null
+    Api DELETE "/api/events/$($foreignEvent.id)" $manager.accessToken -Expected 403 | Out-Null
+    Assert-Check $true 'Kulup yetkilisi baska kulubun etkinligini ekleyemez, guncelleyemez veya silemez'
+    $movePayload = $foreignPayload.Clone()
+    Api PUT "/api/events/$($draft.id)" $manager.accessToken $movePayload -Expected 403 | Out-Null
+    Assert-Check $true 'Kulup yetkilisi kendi etkinligini baska kulube tasiyamaz'
+    Api DELETE "/api/clubs/$clubId" $admin.accessToken -Expected 409 | Out-Null
+    Assert-Check $true 'Etkinligi olan kulup silinmez'
+
+    $validPayload = @{ clubId = $clubId; title = 'Validation'; eventDate = $date.ToString('o'); capacity = 30; status = 'Published' }
+    $invalidCases = @(
+        @{ Field = 'title'; Value = ' '; Label = 'Bos baslik' },
+        @{ Field = 'title'; Value = ('x' * 201); Label = 'Uzun baslik' },
+        @{ Field = 'description'; Value = ('x' * 2001); Label = 'Uzun aciklama' },
+        @{ Field = 'capacity'; Value = 0; Label = 'Sifir kontenjan' },
+        @{ Field = 'eventDate'; Value = [DateTimeOffset]::UtcNow.AddDays(-1).ToString('o'); Label = 'Gecmis tarih' },
+        @{ Field = 'status'; Value = 'unknown'; Label = 'Gecersiz durum' },
+        @{ Field = 'clubId'; Value = [int]::MaxValue; Label = 'Olmayan kulup' },
+        @{ Field = 'campusLocationId'; Value = [int]::MaxValue; Label = 'Olmayan konum' }
+    )
+    foreach ($case in $invalidCases) {
+        $payload = $validPayload.Clone()
+        $payload[$case.Field] = $case.Value
+        Api POST '/api/events' $admin.accessToken $payload -Expected 400 | Out-Null
+        Api PUT "/api/events/$($draft.id)" $admin.accessToken $payload -Expected 400 | Out-Null
+        Assert-Check $true "Ekleme ve guncelleme dogrulamasi: $($case.Label)"
+    }
     $studentList = Api GET "/api/events?clubId=$clubId" $student.accessToken
     Assert-Check ($studentList.totalCount -eq 0) 'Taslaklar ogrenci listesine ve toplam sayiya girmez'
     Api GET "/api/events/$($draft.id)" $student.accessToken -Expected 404 | Out-Null
@@ -121,12 +179,37 @@ try {
     Assert-Check (-not $studentPortal.Session.Cookies.GetCookies([uri]$PortalBaseUrl)['AnkuApp.Portal']) 'Ogrenci MVC yonetim portalina giremez'
     Api GET '/api/events?status=invalid' $student.accessToken -Expected 400 | Out-Null
     Assert-Check $true 'Gecersiz durum filtresi reddedilir'
+
+    if ($CheckDemoData) {
+        $demoClubs = @(Api GET '/api/clubs' $admin.accessToken | Where-Object { $_.name.StartsWith('[Demo] ') })
+        Assert-Check ($demoClubs.Count -eq 2) 'Iki demo kulubu hazir'
+        $owned = @($demoClubs | Where-Object { $_.authorizedUserEmail -eq 'kulup@ankuapp.test' })
+        Assert-Check ($owned.Count -eq 1) 'Demo kulup yetkilisi atanmis'
+        $allDemoEvents = @()
+        foreach ($demoClub in $demoClubs) {
+            $demoPage = Api GET "/api/events?clubId=$($demoClub.id)&pageSize=100" $admin.accessToken
+            $allDemoEvents += @($demoPage.items | Where-Object { $_.title.StartsWith('[Demo] ') })
+        }
+        Assert-Check ($allDemoEvents.Count -eq 6) 'Alti demo etkinligi hazir, yinelenen kayit yok'
+        Assert-Check (@($allDemoEvents | Where-Object { $_.status -eq 'Draft' }).Count -eq 1 -and
+            @($allDemoEvents | Where-Object { $_.status -eq 'Cancelled' }).Count -eq 1) 'Demo taslak ve iptal durumlari hazir'
+        $published = @($allDemoEvents | Where-Object { $_.status -eq 'Published' })
+        Assert-Check (@($published | Where-Object { [DateTimeOffset]::Parse($_.eventDate) -gt [DateTimeOffset]::UtcNow }).Count -eq 2 -and
+            @($published | Where-Object { [DateTimeOffset]::Parse($_.eventDate) -lt [DateTimeOffset]::UtcNow }).Count -eq 2) 'Demo yaklasan ve gecmis akislarini doldurur'
+        $locations = @()
+        foreach ($example in $allDemoEvents) {
+            $exampleDetail = Api GET "/api/events/$($example.id)" $admin.accessToken
+            Assert-Check ($exampleDetail.campusLocationName -and $exampleDetail.campusLocationName.StartsWith('[Demo] ')) "Demo etkinlik konumu: $($example.id)"
+            $locations += $exampleDetail.campusLocationId
+        }
+        Assert-Check (@($locations | Sort-Object -Unique).Count -eq 2) 'Iki farkli Tandogan demo konumu kullanilir'
+    }
 }
 finally {
-    if ($null -ne $clubId) {
-        $temporary = Api GET "/api/events?clubId=$clubId&pageSize=100" $admin.accessToken
+    foreach ($temporaryClubId in $clubIds) {
+        $temporary = Api GET "/api/events?clubId=$temporaryClubId&pageSize=100" $admin.accessToken
         foreach ($event in $temporary.items) { Api DELETE "/api/events/$($event.id)" $admin.accessToken -Expected 204 | Out-Null }
-        Api DELETE "/api/clubs/$clubId" $admin.accessToken -Expected 204 | Out-Null
+        Api DELETE "/api/clubs/$temporaryClubId" $admin.accessToken -Expected 204 | Out-Null
         Write-Host '[OK] Gecici kulup ve etkinlikler temizlendi'
     }
 }
