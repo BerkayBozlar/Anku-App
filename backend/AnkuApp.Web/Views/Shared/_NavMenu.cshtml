@@ -14,7 +14,8 @@
     {
         <li class="nav-item"><a class="nav-link @ActiveIf("Clubs")" asp-controller="Clubs" asp-action="Index">Kulüpler</a></li>
         <li class="nav-item"><a class="nav-link @ActiveIf("Events")" asp-controller="Events" asp-action="Index">Etkinlikler</a></li>
-        <li class="nav-item"><span class="nav-link disabled">Duyurular <span class="badge text-bg-secondary">yakında</span></span></li>
+        <li class="nav-item"><a class="nav-link @ActiveIf("Announcements")" asp-controller="Announcements" asp-action="Index">Duyurular</a></li>
+        <li class="nav-item"><a class="nav-link @ActiveIf("MealMenus")" asp-controller="MealMenus" asp-action="Index">Yemekhane</a></li>
         <li class="nav-item"><span class="nav-link disabled">Kullanıcılar <span class="badge text-bg-secondary">yakında</span></span></li>
     }
     else if (User.IsInRole(Roles.KulupYetkilisi))

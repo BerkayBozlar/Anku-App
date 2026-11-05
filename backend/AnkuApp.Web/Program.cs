@@ -66,6 +66,17 @@ builder.Services.AddHttpClient<ClubsApiClient>(ConfigureApi)
 builder.Services.AddHttpClient<EventsApiClient>(ConfigureApi)
     .ConfigurePrimaryHttpMessageHandler(NoRedirectHandler)
     .AddHttpMessageHandler<AccessTokenHandler>();
+void ConfigureContentApi(HttpClient client)
+{
+    ConfigureApi(client);
+    client.Timeout = TimeSpan.FromSeconds(35); // Resmî kaynak yenilemesi en fazla 25 saniye bekler.
+}
+builder.Services.AddHttpClient<AnnouncementsApiClient>(ConfigureContentApi)
+    .ConfigurePrimaryHttpMessageHandler(NoRedirectHandler)
+    .AddHttpMessageHandler<AccessTokenHandler>();
+builder.Services.AddHttpClient<MealMenusApiClient>(ConfigureContentApi)
+    .ConfigurePrimaryHttpMessageHandler(NoRedirectHandler)
+    .AddHttpMessageHandler<AccessTokenHandler>();
 
 var app = builder.Build();
 

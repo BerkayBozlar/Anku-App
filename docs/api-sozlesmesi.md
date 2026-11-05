@@ -1,5 +1,5 @@
 AnküApp API Sözleşmesi
-Durum: 4. hafta backend ve entegrasyon uygulamasına göre güncellenmiştir (5 Kasım 2026).
+Durum: 5. hafta backend ve entegrasyon uygulamasına göre güncellenmiştir (5 Kasım 2026).
 Kapsam: ASP.NET Core Web API ile Flutter ve MVC istemcilerinin veri alışverişi.
 Kimlik doğrulama, sağlık kontrolü, kulüpler ve etkinlikler bölümleri uygulanmış uç noktaları anlatır. API/MVC entegrasyon kontrolü ve demo verisi için docs/demo-hafta4.md belgesini kullanın.
 Temel adresler ve ortak kurallar
@@ -277,3 +277,106 @@ Uygulama ve entegrasyon sırası
 3. 3. hafta — uygulandı: Events modeli, Club-Events 1:N ilişkisi, DTO'lar, doğrulamalar, GET/POST/PUT/DELETE ve Development ortamında /swagger ile /openapi/v1.json.
 4. 4. hafta — doğrulandı: Tekrar çalıştırılabilir --seed-demo komutu, JWT/Swagger, rol ve sahiplik sınırları, MVC/API veri paylaşımı, yayın görünürlüğü, saat dönüşümü ve doğrulama testleri. Demo verisi dahil 45 otomatik entegrasyon kontrolü.
 Yeni endpoint veya yanıt biçimi eklendiğinde belge gerçek Controllers ve DTO koduyla birlikte güncellenmelidir.
+
+## 5. hafta — Duyurular ve ortak öğle menüsü (uygulandı)
+
+Bu bölüm `feature/week5-announcements-meals` branch'indedir. [Kurulum, kaynaklar ve test rehberi](hafta5-backend.md). Tüm uç noktalar JWT ister; okuma giriş yapan her role, yönetim ve yenileme yalnızca **Yönetici** rolüne açıktır. Öğrenci ve Kulüp Yetkilisi yazma/yenileme çağrılarında 403 alır.
+
+### Duyurular
+
+`GET /api/announcements?page=1&pageSize=20&search=duyuru`
+
+Sayfa en az 1, pageSize 1–100. Büyük sayfa başlangıçları 400 ile reddedilir. Başlıkta büyük/küçük harf duyarsız arama yapılır. Sıralama yayın zamanı ve id azalan biçimdedir.
+
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "title": "Örnek duyuru",
+      "summary": "HTML içermeyen düz metin özeti.",
+      "sourceName": "Ankara Üniversitesi Öğrenci İşleri",
+      "sourceUrl": "https://oidb.ankara.edu.tr/duyurular/",
+      "uniqueKey": "<64-karakter-SHA256>",
+      "publishedAt": "2026-11-05T10:00:00Z",
+      "retrievedAt": "2026-11-05T12:00:00Z",
+      "isManual": false
+    }
+  ],
+  "page": 1,
+  "pageSize": 20,
+  "totalCount": 1
+}
+```
+
+`GET /api/announcements/{id}` aynı öğe biçimini döndürür; kayıt yoksa 404.
+
+`POST /api/announcements` yönetici elle girişi, `PUT /api/announcements/{id}` yönetici düzenlemesidir:
+
+```json
+{
+  "title": "Örnek elle duyuru",
+  "summary": "İsteğe bağlı düz metin özet.",
+  "sourceName": "Ankara Üniversitesi Öğrenci İşleri",
+  "sourceUrl": "https://oidb.ankara.edu.tr/duyurular/",
+  "publishedAt": "2026-11-05T10:00:00Z"
+}
+```
+
+Başlık zorunlu/en fazla 300, özet en fazla 4000, kaynak adı zorunlu/en fazla 150 karakterdir. Kaynak bağlantısı en fazla 2000 karakter, ankara.edu.tr veya alt alanında http/https olmalıdır; kullanıcı bilgisi/özel port kabul edilmez. Yayın tarihi zorunlu, 2000–2100 aralığında ve saat dilimi içeren ISO 8601 biçimindedir; UTC saklanır. İstemci `uniqueKey`, `retrievedAt` ve `isManual` göndermez. POST 201 ve öğe, PUT 204 döner. Aynı normalize kaynak bağlantısı zaten varsa 409 `{ "message": "..." }`; geçersiz alanlar 400 ValidationProblemDetails. URL fragment'i ve sondaki slash tekrar anahtarını değiştirmez. Elle oluşturma/düzenleme `isManual=true` yapar.
+
+`DELETE /api/announcements/{id}`: yönetici, başarı 204, olmayan kayıt 404. Kaynakta hâlâ bulunan duyuru bir sonraki içe aktarmada yeniden gelebilir.
+
+### Yemekhane menüsü
+
+Bu sürüm SKS'nin bütün kampüslerde sunulan ortak **öğle** menüsüdür; kampüs/akşam/vejetaryen seçimi yoktur.
+
+`GET /api/meal-menus/today` Türkiye tarihini kullanır:
+
+```json
+{
+  "date": "2026-11-05",
+  "menu": {
+    "id": 1,
+    "menuDate": "2026-11-05",
+    "dishes": ["Örnek çorba", "Örnek ana yemek", "Örnek pilav", "Örnek tatlı"],
+    "totalCalories": 1200,
+    "sourceName": "Ankara Üniversitesi SKS",
+    "sourceUrl": "https://sksbasvuru.ankara.edu.tr/kayit/moduller/yemeklistesi/aylikmenu.php",
+    "retrievedAt": "2026-11-05T12:00:00Z",
+    "isManual": false
+  },
+  "message": null
+}
+```
+
+Menü yoksa **200** ile `{ "date": "2026-11-05", "menu": null, "message": "Bugün için yayımlanmış öğle menüsü bulunmuyor." }` döner. Eski bir günün menüsü bugün için kullanılmaz.
+
+`GET /api/meal-menus?from=2026-11-01&to=2026-11-07` yanıtı `{ "items": [<menü>], "from": "2026-11-01", "to": "2026-11-07" }`. Her iki sınır dahildir, tarih artan sıralanır. Varsayılan başlangıç bugün, bitiş başlangıç +6 gündür. En fazla 63 gün istenebilir; ters/uzun aralık 400. Tarihler yalnız gün bilgisidir; Flutter bunları UTC'ye/yerel saate çevirmemelidir. Menü yoksa `items: []`.
+
+`GET /api/meal-menus/{id}`: tek menü veya 404.
+
+`POST /api/meal-menus` ve `PUT /api/meal-menus/{id}` yönetici isteği:
+
+```json
+{
+  "menuDate": "2026-11-05",
+  "dishes": ["Örnek çorba", "Örnek ana yemek"],
+  "totalCalories": null,
+  "sourceName": "Ankara Üniversitesi SKS",
+  "sourceUrl": "https://sks.ankara.edu.tr/yemek-hizmetleri-2/"
+}
+```
+
+Tarih zorunlu, 2000–2100 aralığındadır. `dishes` 1–8 adet boş olmayan, en fazla 300 karakterlik yemek adı içerir. `totalCalories` isteğe bağlıdır; verilirse 1–20000 arasıdır, yaklaşık enerji bilgisidir. Kaynak adı/linki duyuru ile aynı kuralları taşır. POST 201 ve öğe, PUT 204; aynı tarihte menü varsa 409. Elle düzenlenen menü `isManual=true` olur ve kaynak yenilemesi tarafından üzerine yazılmaz. `DELETE /api/meal-menus/{id}`: yönetici, 204 veya 404. Resmî kaynaktan silinen bir menü sonraki yenilemede yeniden gelebilir.
+
+### Kaynak yenileme ve durumu
+
+- `POST /api/announcements/refresh`: RSS kaynağını hemen kontrol eder.
+- `POST /api/meal-menus/refresh`: resmî aylık menüyü hemen kontrol eder.
+- İkisi de yalnız Yönetici rolüne açıktır; istek gövdesi gerekmez. Kaynak adresi kullanıcı isteğinden alınmaz.
+- Başarı 200: `{ "success": true, "imported": 10, "changed": 0, "error": null, "skipped": false, "busy": false }`. `imported` kaynaktan okunan kayıt sayısıdır; `changed` yeni duyuru veya eklenen/güncellenen menü sayısıdır. Menü değişmemiş olsa da yeniden yazılıp sayılabilir; bu değer yeni menü sayısı olarak yorumlanmamalıdır.
+- Kaynak hatası 503: `{ "message": "Resmî kaynak okunamadı veya biçimi değişti. Mevcut veriler korundu; elle giriş yapabilir veya tekrar yenileyebilirsiniz." }`. Mevcut liste/detay çağrıları çalışmaya devam eder. Aynı kaynak için devam eden başka yenileme varsa 409 ve açıklayıcı mesaj.
+- `GET /api/content-sync`: yalnız Yönetici; `id`, `lastAttemptAt`, `lastSuccessAt`, `lastError` alanlı dizi. Henüz denenmemiş kaynak için kayıt olmayabilir. Zamanlar UTC, başarılı yenilemede hata null olur. Sonraki başarısız deneme son başarı zamanını silmez.
+
+MVC portalı yenileme çağrılarını CSRF korumalı POST formlarıyla yapar. Öğrenci mobil ekranları yalnızca okuma uç noktalarını kullanır; kaynak bağlantısını haricî tarayıcıda açabilir ve boş/hata durumlarını ayrı gösterebilir.

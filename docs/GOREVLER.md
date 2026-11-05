@@ -82,10 +82,12 @@ Teknik kontroller tamamlandı; birlikte prova ve video için [4. hafta demo rehb
 
 ## Hafta 5 — Duyurular ve yemekhane menüsü
 
-- [ ] **B** Resmî duyuru kaynağı için günde bir çalışan zamanlanmış görev (HttpClient + BackgroundService), kaynak bağlantısı, `UniqueKey` ile tekrar önleme
-- [ ] **B** Kaynak bozulursa: yöneticinin elle duyuru girişi ve "şimdi yenile" uç noktası/portal butonu
-- [ ] **B** Yemekhane menüsü verisi ve API'si
+- [x] **B** Resmî duyuru kaynağı için günde bir çalışan zamanlanmış görev (HttpClient + BackgroundService), kaynak bağlantısı, `UniqueKey` ile tekrar önleme
+- [x] **B** Kaynak bozulursa: yöneticinin elle duyuru girişi ve "şimdi yenile" uç noktası/portal butonu
+- [x] **B** Yemekhane menüsü verisi ve API'si: SKS aylık listesinden ortak öğle menüsü, tarih/kaynak bilgisi ve yönetici elle giriş yedeği
 - [ ] **Y** Flutter duyuru akışı ve yemekhane menüsü ekranları
+
+Backend ve MVC yönetimi `feature/week5-announcements-meals` branch'inde hazır. 23 birim testi, 45 adet 5. hafta entegrasyon kontrolü ve önceki haftanın 45 kontrolü geçti. Berkay'ın kendi testleri ve açık merge onayı beklenir; `main`e merge yapılmadı. [5. hafta kurulum, test ve mobil entegrasyon rehberi](hafta5-backend.md).
 
 ## Hafta 6 — Ders programı görseli, akademik takvim, hatırlatıcılar
 

@@ -7,6 +7,7 @@ Ankara University Campus Management Web Portal and Flutter Mobile Application
 - [BLM4581 Web plan belgesi](docs/plan/BLM4581-web-plan.md)
 - [Veritabanı taslağı](docs/veritabani-taslagi.md)
 - [4. hafta ilk gösterim ve entegrasyon rehberi](docs/demo-hafta4.md)
+- [5. hafta duyuru/menü API'si, kurulum ve test rehberi](docs/hafta5-backend.md)
 
 ## Haftalık Proje Videoları
 [Haftalık Proje Videoları – Google Drive](https://drive.google.com/drive/folders/1nl9wWlVjwhCP9dYb0tzGQ9k32NIIHGIA?usp=sharing)

@@ -16,12 +16,38 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<Event> Events => Set<Event>();
 
+    public DbSet<Announcement> Announcements => Set<Announcement>();
+    public DbSet<MealMenu> MealMenus => Set<MealMenu>();
+    public DbSet<ContentSyncState> ContentSyncStates => Set<ContentSyncState>();
+
     public DbSet<CampusLocation> CampusLocations
         => Set<CampusLocation>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+
+        builder.Entity<Announcement>(entity =>
+        {
+            entity.Property(a => a.Title).HasMaxLength(300).IsRequired();
+            entity.Property(a => a.Summary).HasMaxLength(4000);
+            entity.Property(a => a.SourceName).HasMaxLength(150).IsRequired();
+            entity.Property(a => a.SourceUrl).HasMaxLength(2000).IsRequired();
+            entity.Property(a => a.UniqueKey).HasMaxLength(64).IsRequired();
+            entity.HasIndex(a => a.UniqueKey).IsUnique();
+            entity.HasIndex(a => a.PublishedAt);
+        });
+        builder.Entity<MealMenu>(entity =>
+        {
+            entity.Property(m => m.SourceName).HasMaxLength(150).IsRequired();
+            entity.Property(m => m.SourceUrl).HasMaxLength(2000).IsRequired();
+            entity.HasIndex(m => m.MenuDate).IsUnique();
+        });
+        builder.Entity<ContentSyncState>(entity =>
+        {
+            entity.Property(s => s.Id).HasMaxLength(30);
+            entity.Property(s => s.LastError).HasMaxLength(1000);
+        });
 
         builder.Entity<Event>(entity =>
         {

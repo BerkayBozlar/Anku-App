@@ -7,6 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using Microsoft.OpenApi;
 using Microsoft.AspNetCore.Authorization;
+using AnkuApp.Api.Content;
 
 // Ayrı komut, demo verisini sunucuyu başlatmadan hazırlar.
 var seedDemo = args.Contains("--seed-demo", StringComparer.Ordinal);
@@ -56,6 +57,17 @@ builder.Services
     });
 
 builder.Services.AddAuthorization();
+
+builder.Services.Configure<ContentSourceOptions>(builder.Configuration.GetSection("ContentSources"));
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<ContentSyncGate>();
+builder.Services.AddScoped<ContentSyncService>();
+builder.Services.AddHttpClient<OfficialContentClient>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(20);
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("AnkuApp/1.0 (+https://github.com/BerkayBozlar/Anku-App)");
+}).ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false });
+builder.Services.AddHostedService<ContentRefreshWorker>();
 
 
 // Add services to the container.

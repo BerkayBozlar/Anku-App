@@ -1,0 +1,40 @@
+@model AnnouncementListViewModel
+@using AnkuApp.Web.Services
+@{ ViewData["Title"] = "Duyurular"; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Duyurular</h1>
+    <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-primary" asp-action="Create">Elle duyuru ekle</a>
+        <form asp-action="Refresh" method="post"><button class="btn btn-outline-primary" type="submit">Şimdi yenile</button></form>
+    </div>
+</div>
+<partial name="_ContentSync" model="Model.Sync" />
+<form method="get" class="d-flex gap-2 mb-3" role="search">
+    <input name="search" value="@Model.Search" class="form-control" placeholder="Başlıkta ara" aria-label="Duyuru başlığı" />
+    <button class="btn btn-outline-secondary" type="submit">Ara</button>
+</form>
+@if (Model.LoadError is { } error) { <div class="alert alert-danger" role="alert">@error</div> }
+else if (Model.Page is not { Items.Count: > 0 }) { <div class="alert alert-info">Henüz duyuru bulunmuyor. Kaynağı yenileyebilir veya elle duyuru ekleyebilirsiniz.</div> }
+else
+{
+    foreach (var item in Model.Page.Items)
+    {
+        <article class="card mb-3">
+            <div class="card-body">
+                <h2 class="h5">@item.Title</h2>
+                <p class="text-body-secondary small">@PortalTime.ToLocal(item.PublishedAt).ToString("dd.MM.yyyy HH:mm") · @item.SourceName · @(item.IsManual ? "Elle girildi" : "Resmî kaynaktan alındı")</p>
+                <p class="text-break">@item.Summary</p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="@item.SourceUrl" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-secondary">Kaynağı aç</a>
+                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Düzenle</a>
+                    <form asp-action="Delete" asp-route-id="@item.Id" method="post" onsubmit="return confirm('Bu duyuru silinsin mi?');"><button type="submit" class="btn btn-sm btn-outline-danger">Sil</button></form>
+                </div>
+            </div>
+        </article>
+    }
+    <nav class="d-flex flex-wrap gap-2 align-items-center" aria-label="Duyuru sayfaları">
+        @if (Model.Page.Page > 1) { <a asp-route-page="@(Model.Page.Page - 1)" asp-route-search="@Model.Search" class="btn btn-outline-secondary">Önceki</a> }
+        <span>Sayfa @Model.Page.Page · @Model.Page.TotalCount duyuru</span>
+        @if ((long)Model.Page.Page * Model.Page.PageSize < Model.Page.TotalCount) { <a asp-route-page="@(Model.Page.Page + 1)" asp-route-search="@Model.Search" class="btn btn-outline-secondary">Sonraki</a> }
+    </nav>
+}

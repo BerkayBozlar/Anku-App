@@ -68,8 +68,7 @@ kimlik doğrulama tasarımında netleştirilecektir.
 - PublishedAt
 - UniqueKey
 
-UniqueKey tekrar eden duyuruları tespit etmek
-için kullanılacaktır.
+5. haftada uygulandı: ayrıca `Summary`, `SourceName`, `RetrievedAt` ve `IsManual` alanları bulunur. Normalize edilmiş kaynak bağlantısının SHA-256 karşılığı `UniqueKey` üzerinde benzersiz indeks vardır; `PublishedAt` indekslidir. Tarih alanları UTC tutulur.
 
 ## 6. CampusLocations
 Kampüsteki binalar ve önemli noktalar.
@@ -93,5 +92,12 @@ ihtiyaca göre genişletilebilir.
 ASP.NET Core Identity kendi kullanıcı ve rol
 tablolarını oluşturabilir.
 
-Gerçek veritabanı ve EF Core Migration
-çalışmaları ikinci haftada yapılacaktır.
+Identity, Clubs, Events ve CampusLocations uygulandı. EventParticipants 8. haftanın kapsamındadır; henüz tablo olarak eklenmedi.
+
+## 7. MealMenus (5. haftada uygulandı)
+
+SKS'nin kampüslerde ortak sunulan öğle menüsü. `Id`, `MenuDate` (date), `Dishes` (PostgreSQL text[]), `TotalCalories` (isteğe bağlı), `SourceName`, `SourceUrl`, `RetrievedAt` (UTC), `IsManual`. `MenuDate` üzerinde benzersiz indeks vardır. Elle düzeltilen menüler otomatik içe aktarmada değiştirilmez.
+
+## 8. ContentSyncStates (5. haftada uygulandı)
+
+`Id` (`announcements` veya `meal-menus`), `LastAttemptAt`, `LastSuccessAt`, `LastError`. Son deneme kalıcıdır; Türkiye tarihine göre aynı gün yeniden başlatılan API günlük kontrolü tekrarlamaz. Kaynak hatasında son başarı zamanı ve mevcut içerikler korunur.

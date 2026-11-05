@@ -1,0 +1,18 @@
+@model MealMenuFormViewModel
+@{ ViewData["Title"] = Model.Id is null ? "Öğle menüsü ekle" : "Öğle menüsünü düzenle"; }
+<div class="row justify-content-center"><div class="col-12 col-lg-8">
+    <h1 class="h3 mb-3">@ViewData["Title"]</h1>
+    <div class="card"><div class="card-body">
+        <form asp-action="@(Model.Id is null ? "Create" : "Edit")" asp-route-id="@Model.Id" method="post">
+            <div asp-validation-summary="All" class="text-danger mb-3" role="alert"></div>
+            <div class="mb-3"><label asp-for="MenuDate" class="form-label"></label><input asp-for="MenuDate" type="date" class="form-control" /></div>
+            <div class="mb-3"><label asp-for="DishesText" class="form-label"></label><textarea asp-for="DishesText" class="form-control" rows="6" maxlength="2500"></textarea><span asp-validation-for="DishesText" class="text-danger"></span></div>
+            <div class="mb-3"><label asp-for="TotalCalories" class="form-label"></label><input asp-for="TotalCalories" class="form-control" /></div>
+            <div class="mb-3"><label asp-for="SourceName" class="form-label"></label><input asp-for="SourceName" class="form-control" maxlength="150" /></div>
+            <div class="mb-3"><label asp-for="SourceUrl" class="form-label"></label><input asp-for="SourceUrl" class="form-control" type="url" /><div class="form-text">Menünün yayımlandığı resmî Ankara Üniversitesi bağlantısı.</div></div>
+            <p class="small text-body-secondary">Elle girilen veya düzenlenen menüler otomatik yenilemede korunur.</p>
+            <button class="btn btn-primary" type="submit">Kaydet</button> <a asp-action="Index" class="btn btn-outline-secondary">Vazgeç</a>
+        </form>
+    </div></div>
+</div></div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

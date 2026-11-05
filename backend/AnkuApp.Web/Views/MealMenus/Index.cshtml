@@ -1,0 +1,37 @@
+@model MealMenuListViewModel
+@{ ViewData["Title"] = "Yemekhane menüsü"; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Yemekhane menüsü</h1>
+    <div class="d-flex flex-wrap gap-2">
+        <a asp-action="Create" class="btn btn-primary">Elle menü ekle</a>
+        <form asp-action="Refresh" method="post"><button type="submit" class="btn btn-outline-primary">Şimdi yenile</button></form>
+    </div>
+</div>
+<p>SKS'nin kampüslerde sunulan ortak öğle menüsü. Seçilen tarihten başlayan yedi gün gösterilir.</p>
+<partial name="_ContentSync" model="Model.Sync" />
+<form method="get" class="d-flex flex-wrap gap-2 mb-3">
+    <label for="menu-date" class="align-self-center">Başlangıç tarihi</label>
+    <input id="menu-date" type="date" name="date" value="@Model.Date.ToString("yyyy-MM-dd")" class="form-control w-auto" />
+    <button class="btn btn-outline-secondary" type="submit">Göster</button>
+</form>
+@if (Model.LoadError is { } error) { <div class="alert alert-danger" role="alert">@error</div> }
+else if (Model.Items.Count == 0) { <div class="alert alert-info">Bu tarih aralığında yayımlanmış öğle menüsü bulunmuyor. Kaynağı yenileyebilir veya elle menü ekleyebilirsiniz.</div> }
+else
+{
+    <div class="row g-3">
+    @foreach (var item in Model.Items)
+    {
+        <div class="col-12 col-md-6 col-xl-4"><article class="card h-100"><div class="card-body d-flex flex-column">
+            <h2 class="h5">@item.MenuDate.ToString("dd.MM.yyyy")</h2>
+            <ul>@foreach (var dish in item.Dishes) { <li class="text-break">@dish</li> }</ul>
+            @if (item.TotalCalories is { } calories) { <p class="small">Toplam enerji: @calories kkal (yaklaşık)</p> }
+            <p class="small text-body-secondary">@item.SourceName · @(item.IsManual ? "Elle girildi" : "Resmî kaynaktan alındı")</p>
+            <div class="d-flex flex-wrap gap-2 mt-auto">
+                <a href="@item.SourceUrl" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-secondary">Kaynak</a>
+                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Düzenle</a>
+                <form asp-action="Delete" asp-route-id="@item.Id" method="post" onsubmit="return confirm('Bu menü silinsin mi?');"><button class="btn btn-sm btn-outline-danger" type="submit">Sil</button></form>
+            </div>
+        </div></article></div>
+    }
+    </div>
+}
