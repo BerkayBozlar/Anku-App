@@ -1,5 +1,5 @@
 AnküApp API Sözleşmesi
-Durum: 5. hafta backend ve entegrasyon uygulamasına göre güncellenmiştir (5 Kasım 2026).
+Durum: 6. hafta akademik takvim API'siyle güncellenmiştir (15 Kasım 2026).
 Kapsam: ASP.NET Core Web API ile Flutter ve MVC istemcilerinin veri alışverişi.
 Kimlik doğrulama, sağlık kontrolü, kulüpler ve etkinlikler bölümleri uygulanmış uç noktaları anlatır. API/MVC entegrasyon kontrolü ve demo verisi için docs/demo-hafta4.md belgesini kullanın.
 Temel adresler ve ortak kurallar
@@ -380,3 +380,91 @@ Tarih zorunlu, 2000–2100 aralığındadır. `dishes` 1–8 adet boş olmayan, 
 - `GET /api/content-sync`: yalnız Yönetici; `id`, `lastAttemptAt`, `lastSuccessAt`, `lastError` alanlı dizi. Henüz denenmemiş kaynak için kayıt olmayabilir. Zamanlar UTC, başarılı yenilemede hata null olur. Sonraki başarısız deneme son başarı zamanını silmez.
 
 MVC portalı yenileme çağrılarını CSRF korumalı POST formlarıyla yapar. Öğrenci mobil ekranları yalnızca okuma uç noktalarını kullanır; kaynak bağlantısını haricî tarayıcıda açabilir ve boş/hata durumlarını ayrı gösterebilir.
+
+## 6. hafta — Akademik takvim (uygulandı)
+
+İki plan belgesinde Berkay'a verilen takvim verisi/API görevi ortak uygulamayla karşılanır. [Kapsam, kaynak ve test rehberi](hafta6-backend.md). Tüm çağrılar JWT ister. Yönetim/yenileme yalnızca Yönetici rolüne açıktır; öğrenci ve kulüp yetkilisi liste/ayrıntı okuyabilir.
+
+### GET /api/academic-calendar/years
+
+Veritabanında mevcut akademik yılları azalan sıralı dizi olarak döndürür: `["2026-2027"]`. Henüz veri yoksa `[]`.
+
+### GET /api/academic-calendar
+
+Örnek: `/api/academic-calendar?academicYear=2026-2027&term=Fall&from=2026-11-01&to=2026-11-30&page=1&pageSize=20`
+
+- `academicYear`: `2026-2027` biçiminde ardışık iki yıl; başlangıç 2000–2099. Verilmezse Türkiye tarihine göre ağustosta değişen akademik yıl kullanılır. Mevcut yıllar `/years` üzerinden seçilebilir; bu varsayım resmî ders başlangıç günü değildir.
+- `term`: isteğe bağlı, tam olarak `Fall`, `Spring` veya `YearRound`.
+- `scope`: isteğe bağlı, kapsam adıyla tam eşleşir. Resmî genel kaynağın kapsamı `Ön lisans ve lisans (genel takvim)`.
+- `from` / `to`: isteğe bağlı `yyyy-MM-dd`. İki uç dahil olmak üzere istenen aralıkla **kesişen** kayıtlar gelir: `endDate >= from`, `startDate <= to`. Böylece devam eden ders dönemi kaybolmaz.
+- `page`: varsayılan 1, en az 1. `pageSize`: varsayılan 20, 1–100. Hesaplanan sayfa başlangıcı `int.MaxValue` değerini aşamaz.
+- Sıralama başlangıç günü, bitiş günü ve id artandır. Geçersiz yıl/dönem/tarih/sayfalama 400 döner.
+
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "academicYear": "2026-2027",
+      "scope": "Ön lisans ve lisans (genel takvim)",
+      "term": "Fall",
+      "title": "Örnek akademik tarih",
+      "description": null,
+      "startDate": "2026-11-16",
+      "endDate": "2026-11-22",
+      "sourceName": "Ankara Üniversitesi Öğrenci İşleri",
+      "sourceUrl": "https://oidb.ankara.edu.tr/wp-content/uploads/sites/91/2026/06/2026-2027_Yili_Akademik_Takvimi-SON.pdf",
+      "sourcePage": 1,
+      "uniqueKey": "<64-karakter-SHA256>",
+      "retrievedAt": "2026-11-15T12:00:00Z",
+      "isManual": false
+    }
+  ],
+  "page": 1,
+  "pageSize": 20,
+  "totalCount": 1,
+  "academicYear": "2026-2027",
+  "message": null
+}
+```
+
+Örnek gövde alan biçimini gösterir. Veri yoksa HTTP 200 ve `{ "items": [], "page": 1, "pageSize": 20, "totalCount": 0, "academicYear": "2026-2027", "message": "Bu filtrelere uygun akademik takvim kaydı bulunmuyor." }` döner.
+
+### GET /api/academic-calendar/{id}
+
+Tek öğeyi yukarıdaki biçimde, kayıt yoksa 404 döndürür. Başlıkta varsa programa özel açıklamalar (`hariç`, açık/uzaktan eğitim vb.) kullanıcıya gösterilmelidir. Genel takvim, PDF'nin diğer fakülte takvimleriyle aynı kabul edilmemelidir.
+
+### POST /api/academic-calendar ve PUT /api/academic-calendar/{id}
+
+Yönetici elle giriş ve düzeltme isteği:
+
+```json
+{
+  "academicYear": "2026-2027",
+  "scope": "Ön lisans ve lisans (genel takvim)",
+  "term": "Fall",
+  "title": "Örnek akademik tarih",
+  "description": "İsteğe bağlı açıklama.",
+  "startDate": "2026-11-16",
+  "endDate": "2026-11-22",
+  "sourceName": "Ankara Üniversitesi Öğrenci İşleri",
+  "sourceUrl": "https://oidb.ankara.edu.tr/",
+  "sourcePage": 1
+}
+```
+
+Başlık zorunlu/en fazla 400, kapsam zorunlu/en fazla 200, açıklama en fazla 2000, kaynak adı zorunlu/en fazla 150 karakterdir. Kaynak bağlantısı önceki haftanın resmî alan doğrulamasını kullanır: ankara.edu.tr veya alt alanında http/https, en fazla 2000 karakter, özel port/kullanıcı bilgisi yok. `sourcePage` isteğe bağlı; verilirse 1–50.
+
+Başlangıç ve bitiş zorunlu günlerdir; bitiş başlangıçtan önce olamaz. Her iki gün, belirtilen akademik yılın iki takvim yılı içinde olmalıdır. Tek günlü kayıtlar aynı başlangıç/bitişi kullanır. Geçersiz alanlar 400 ValidationProblemDetails döner. Aynı yıl/kapsam/dönem/başlık/tarih aralığı tekrar kaydedilirse 409 ve `{ "message": "..." }`.
+
+POST 201 ve öğe, PUT 204 döndürür. PUT bulunamayan kayıt için 404. `id`, `uniqueKey`, `retrievedAt`, `isManual` istemci tarafından atanmaz. Ekleme/düzeltme `isManual=true` yapar; düzeltmede kimlik ve mevcut kaynak anahtarı korunur. Manuel düzeltme sonraki otomatik kaynak yenilemesinde korunur.
+
+### DELETE /api/academic-calendar/{id}
+
+Yönetici için 204; bulunamayan kayıt 404. Kaynakta hâlâ bulunan otomatik kayıt sonraki yenilemede yeniden eklenebilir; yeni kimlik alabilir.
+
+### POST /api/academic-calendar/refresh
+
+Yönetici için resmî PDF'yi hemen yeniler; gövde gerekmez. Kaynak adresi yapılandırmadadır. 5. haftanın `ContentSyncResult` biçimini kullanır: başarı 200, bozuk/erişilemeyen kaynak 503 mesaj, aynı kaynak için devam eden yenileme 409 mesaj. İşlem ya tamamen kaydedilir ya geri alınır; hata önceki takvimi ve son başarı zamanını silmez. İçe aktarılan satır sayısı `imported`, yazılan/güncellenen/kaldırılan satır sayısı `changed`; değişmeyen satır da yeniden yazılabilir. Ortak yönetici `GET /api/content-sync` listesinde yeni `id: "academic-calendar"` kaynağı görünür; istemci kaynak sayısını sabit iki varsaymamalıdır.
+
+**Mobil hatırlatıcı entegrasyonu:** `startDate` ve `endDate` saat dilimsiz günlerdir, UTC'ye çevrilmemelidir. Kullanıcının seçtiği gün ve saatle cihaz üzerinde bildirim oluşturulur. `retrievedAt` UTC kayıt zamanıdır. Yerel hatırlatıcıyı `id` ile ilişkilendirirken takvim tarihi değişikliği ve silinen/yeniden oluşturulan kayıtları ele alın; backend yerel bildirimi kendiliğinden güncellemez. Görsel saklama, kişisel hatırlatıcı ve yerel bildirim bu backend API'sinin parçası değildir.

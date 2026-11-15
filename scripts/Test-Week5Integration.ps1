@@ -180,18 +180,18 @@ try {
         Check ($firstMenus.imported -gt 0 -and $secondMenus.imported -gt 0 -and $before.items.Count -eq $after.items.Count) 'Resmi aylik Excel menusu okunur ve tarihler cogalmaz'
         $protectedMenu = Api GET "/api/meal-menus/$($menu.id)" $student.accessToken
         Check ($protectedMenu.dishes[0] -eq 'Updated test dish') 'Elle girilen menu kaynak yenilemesinde korunur'
-        $states = @(Api GET '/api/content-sync' $admin.accessToken)
+        $states = @(Api GET '/api/content-sync' $admin.accessToken | Where-Object { $_.id -in @('announcements', 'meal-menus') })
         Check (@($states | Where-Object { $_.lastSuccessAt -and -not $_.lastError }).Count -eq 2) 'Kaynaklarin son basari durumu kaydedilir'
     }
     if ($FailureApiBaseUrl) {
         $beforeCount = (Api GET '/api/announcements' $admin.accessToken).totalCount
-        $beforeStates = @(Api GET '/api/content-sync' $admin.accessToken)
+        $beforeStates = @(Api GET '/api/content-sync' $admin.accessToken | Where-Object { $_.id -in @('announcements', 'meal-menus') })
         foreach ($kind in @('announcements', 'meal-menus')) {
             $failure = Api POST "/api/$kind/refresh" $admin.accessToken -Expected 503 -Base $FailureApiBaseUrl
             Check ([bool]$failure.message) "Bozuk kaynak HTTP 503 ve anlasilir hata doner: $kind"
         }
         $afterCount = (Api GET '/api/announcements' $admin.accessToken).totalCount
-        $states = @(Api GET '/api/content-sync' $admin.accessToken)
+        $states = @(Api GET '/api/content-sync' $admin.accessToken | Where-Object { $_.id -in @('announcements', 'meal-menus') })
         Check ($beforeCount -eq $afterCount -and @($states | Where-Object { $_.lastError }).Count -eq 2) 'Kaynak hatasi kayitlari silmez ve hata durumunu saklar'
         foreach ($state in $states) {
             $previous = $beforeStates | Where-Object { $_.id -eq $state.id }

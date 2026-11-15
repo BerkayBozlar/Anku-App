@@ -91,9 +91,11 @@ Backend ve MVC yönetimi `main`de: 23 birim testi, 5. hafta entegrasyon kontroll
 
 ## Hafta 6 — Ders programı görseli, akademik takvim, hatırlatıcılar
 
-- [ ] **B** Akademik takvim verisi ve API desteği
+- [x] **B** Akademik takvim verisi ve API desteği: resmî PDF'den genel güz/bahar takvimi, yıl/dönem/tarih filtreleri, yönetici elle giriş/yenileme, migration ve testler ([6. hafta rehberi](hafta6-backend.md))
 - [ ] **Y** Ders/sınav programı görseli: image_picker ile galeriden seçme, cihazda saklama, yakınlaştırma, değiştirme, silme
 - [ ] **Y** Akademik takvim ekranı; kişisel hatırlatıcılar ve flutter_local_notifications + timezone ile yerel bildirim
+
+Berkay'ın iki plan belgesindeki aynı görev, `feature/week6-academic-calendar` branch'inde ortak backend ile tamamlandı. 57 birim testi ve 45 takvim entegrasyon kontrolü geçti; önceki haftaların 39 ve 45 kontrolü de başarılı. Kullanıcının kendi test/merge onayı ve Yiğithan ile cihaz entegrasyonu ayrıca beklenir. Bu çalışma `main`e merge edilmedi veya pushlanmadı.
 
 ## Hafta 7 — Harita ve not hesaplayıcı
 

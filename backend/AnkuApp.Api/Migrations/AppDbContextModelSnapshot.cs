@@ -22,6 +22,84 @@ namespace AnkuApp.Api.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("AnkuApp.Api.Models.AcademicCalendarEntry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AcademicYear")
+                        .IsRequired()
+                        .HasMaxLength(9)
+                        .HasColumnType("character varying(9)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateOnly>("EndDate")
+                        .HasColumnType("date");
+
+                    b.Property<bool>("IsManual")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("RetrievedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("SourceName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<int?>("SourcePage")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Term")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(400)
+                        .HasColumnType("character varying(400)");
+
+                    b.Property<string>("UniqueKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UniqueKey")
+                        .IsUnique();
+
+                    b.HasIndex("AcademicYear", "StartDate");
+
+                    b.HasIndex("AcademicYear", "Scope", "Term", "Title", "StartDate", "EndDate")
+                        .IsUnique();
+
+                    b.ToTable("AcademicCalendarEntries", t =>
+                        {
+                            t.HasCheckConstraint("CK_AcademicCalendarEntries_DateRange", "\"EndDate\" >= \"StartDate\"");
+                        });
+                });
+
             modelBuilder.Entity("AnkuApp.Api.Models.Announcement", b =>
                 {
                     b.Property<int>("Id")

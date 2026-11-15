@@ -19,6 +19,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Announcement> Announcements => Set<Announcement>();
     public DbSet<MealMenu> MealMenus => Set<MealMenu>();
     public DbSet<ContentSyncState> ContentSyncStates => Set<ContentSyncState>();
+    public DbSet<AcademicCalendarEntry> AcademicCalendarEntries => Set<AcademicCalendarEntry>();
 
     public DbSet<CampusLocation> CampusLocations
         => Set<CampusLocation>();
@@ -26,6 +27,22 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+
+        builder.Entity<AcademicCalendarEntry>(entity =>
+        {
+            entity.Property(e => e.AcademicYear).HasMaxLength(9).IsRequired();
+            entity.Property(e => e.Scope).HasMaxLength(200).IsRequired();
+            entity.Property(e => e.Term).HasMaxLength(10).IsRequired();
+            entity.Property(e => e.Title).HasMaxLength(400).IsRequired();
+            entity.Property(e => e.Description).HasMaxLength(2000);
+            entity.Property(e => e.SourceName).HasMaxLength(150).IsRequired();
+            entity.Property(e => e.SourceUrl).HasMaxLength(2000).IsRequired();
+            entity.Property(e => e.UniqueKey).HasMaxLength(64).IsRequired();
+            entity.HasIndex(e => e.UniqueKey).IsUnique();
+            entity.HasIndex(e => new { e.AcademicYear, e.StartDate });
+            entity.HasIndex(e => new { e.AcademicYear, e.Scope, e.Term, e.Title, e.StartDate, e.EndDate }).IsUnique();
+            entity.ToTable(t => t.HasCheckConstraint("CK_AcademicCalendarEntries_DateRange", "\"EndDate\" >= \"StartDate\""));
+        });
 
         builder.Entity<Announcement>(entity =>
         {

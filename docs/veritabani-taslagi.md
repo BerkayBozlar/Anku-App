@@ -101,3 +101,9 @@ SKS'nin kampüslerde ortak sunulan öğle menüsü. `Id`, `MenuDate` (date), `Di
 ## 8. ContentSyncStates (5. haftada uygulandı)
 
 `Id` (`announcements` veya `meal-menus`), `LastAttemptAt`, `LastSuccessAt`, `LastError`. Son deneme kalıcıdır; Türkiye tarihine göre aynı gün yeniden başlatılan API günlük kontrolü tekrarlamaz. Kaynak hatasında son başarı zamanı ve mevcut içerikler korunur.
+
+## 9. AcademicCalendarEntries (6. haftada uygulandı)
+
+`Id`, `AcademicYear`, `Scope`, `Term`, `Title`, `Description`, `StartDate`, `EndDate`, `SourceName`, `SourceUrl`, `SourcePage`, `UniqueKey`, `RetrievedAt`, `IsManual`. Başlangıç/bitiş PostgreSQL `date`, son kayıt zamanı UTC'dir. Bitiş başlangıçtan önce olamaz (veritabanı check kısıtı). `UniqueKey` ve yıl/kapsam/dönem/başlık/tarih aralığı üzerinde benzersiz indeksler; yıl/başlangıç üzerinde listeleme indeksi vardır.
+
+`ContentSyncStates` ayrıca `academic-calendar` kaynağını tutar. Kişisel hatırlatıcılar bu tabloda saklanmaz; 6. hafta planında cihaz tarafında Yiğithan'ın görevidir.

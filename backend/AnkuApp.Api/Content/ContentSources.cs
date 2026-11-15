@@ -8,6 +8,7 @@ public sealed class ContentSourceOptions
     public bool Enabled { get; set; } = true;
     public string AnnouncementsUrl { get; set; } = "https://oidb.ankara.edu.tr/category/duyurular/feed/";
     public string MealMenusUrl { get; set; } = "https://sksbasvuru.ankara.edu.tr/kayit/moduller/yemeklistesi/aylikmenu.php";
+    public string AcademicCalendarUrl { get; set; } = "https://oidb.ankara.edu.tr/wp-content/uploads/sites/91/2026/06/2026-2027_Yili_Akademik_Takvimi-SON.pdf";
 }
 
 public static class ContentSources

@@ -11,7 +11,7 @@ public sealed class ContentRefreshWorker(
         using var timer = new PeriodicTimer(TimeSpan.FromMinutes(30));
         do
         {
-            foreach (var kind in new[] { ContentSyncService.Announcements, ContentSyncService.MealMenus })
+            foreach (var kind in new[] { ContentSyncService.Announcements, ContentSyncService.MealMenus, ContentSyncService.AcademicCalendar })
             {
                 try
                 {

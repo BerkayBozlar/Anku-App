@@ -9,6 +9,7 @@ public sealed class ContentSyncGate
 {
     public SemaphoreSlim Announcements { get; } = new(1, 1);
     public SemaphoreSlim MealMenus { get; } = new(1, 1);
+    public SemaphoreSlim AcademicCalendar { get; } = new(1, 1);
 }
 
 public record ContentSyncResult(bool Success, int Imported, int Changed, string? Error = null, bool Skipped = false, bool Busy = false);
@@ -19,6 +20,7 @@ public sealed class ContentSyncService(
 {
     public const string Announcements = "announcements";
     public const string MealMenus = "meal-menus";
+    public const string AcademicCalendar = "academic-calendar";
 
     public static bool IsDue(DateTime? lastAttempt, DateTimeOffset now) =>
         lastAttempt is null || ContentSources.TurkeyDate(new DateTimeOffset(DateTime.SpecifyKind(lastAttempt.Value, DateTimeKind.Utc)))
@@ -30,6 +32,7 @@ public sealed class ContentSyncService(
         {
             Announcements => gates.Announcements,
             MealMenus => gates.MealMenus,
+            AcademicCalendar => gates.AcademicCalendar,
             _ => throw new ArgumentException("Bilinmeyen kaynak.", nameof(kind))
         };
         if (!await gate.WaitAsync(0, ct)) return new(false, 0, 0, "Bu kaynak zaten yenileniyor.", Busy: true);
@@ -48,9 +51,17 @@ public sealed class ContentSyncService(
             {
                 using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
                 timeout.CancelAfter(TimeSpan.FromSeconds(25));
-                var bytes = await source.DownloadAsync(kind == Announcements ? options.Value.AnnouncementsUrl : options.Value.MealMenusUrl, timeout.Token);
+                var sourceUrl = kind switch
+                {
+                    Announcements => options.Value.AnnouncementsUrl,
+                    MealMenus => options.Value.MealMenusUrl,
+                    AcademicCalendar => options.Value.AcademicCalendarUrl,
+                    _ => throw new ArgumentException("Bilinmeyen kaynak.", nameof(kind))
+                };
+                var bytes = await source.DownloadAsync(sourceUrl, timeout.Token);
                 var announcements = kind == Announcements ? OfficialContentParser.Announcements(bytes) : [];
                 var menus = kind == MealMenus ? OfficialContentParser.MealMenus(bytes) : [];
+                var calendar = kind == AcademicCalendar ? AcademicCalendarParser.Read(bytes, timeout.Token) : [];
                 var changed = 0;
                 await using var transaction = await db.Database.BeginTransactionAsync(ct);
                 foreach (var item in announcements)
@@ -73,11 +84,35 @@ public sealed class ContentSyncService(
                         WHERE NOT "MealMenus"."IsManual"
                         """, ct);
                 }
+                foreach (var entry in calendar)
+                {
+                    var url = ContentSources.NormalizeUrl(sourceUrl);
+                    changed += await db.Database.ExecuteSqlInterpolatedAsync($"""
+                        INSERT INTO "AcademicCalendarEntries"
+                            ("AcademicYear", "Scope", "Term", "Title", "StartDate", "EndDate", "SourceName", "SourceUrl", "SourcePage", "UniqueKey", "RetrievedAt", "IsManual")
+                        VALUES ({entry.AcademicYear}, {entry.Scope}, {entry.Term}, {entry.Title}, {entry.StartDate}, {entry.EndDate},
+                            {"Ankara Üniversitesi Öğrenci İşleri"}, {url}, {entry.SourcePage}, {entry.UniqueKey}, {attemptedAt}, {false})
+                        ON CONFLICT ("UniqueKey") DO UPDATE SET "StartDate" = EXCLUDED."StartDate", "EndDate" = EXCLUDED."EndDate",
+                            "SourceName" = EXCLUDED."SourceName", "SourceUrl" = EXCLUDED."SourceUrl", "SourcePage" = EXCLUDED."SourcePage", "RetrievedAt" = EXCLUDED."RetrievedAt"
+                        WHERE NOT "AcademicCalendarEntries"."IsManual"
+                        """, ct);
+                }
+                if (calendar.Count > 0)
+                {
+                    var year = calendar[0].AcademicYear;
+                    var scope = calendar[0].Scope;
+                    var keys = calendar.Select(e => e.UniqueKey).ToArray();
+                    // Yalnızca doğrulanmış tam takvimdeki eski kaynak satırları kaldırılır; manuel kayıtlar korunur.
+                    changed += await db.Database.ExecuteSqlInterpolatedAsync($"""
+                        DELETE FROM "AcademicCalendarEntries" WHERE "AcademicYear" = {year} AND "Scope" = {scope}
+                            AND NOT "IsManual" AND NOT ("UniqueKey" = ANY({keys}))
+                        """, ct);
+                }
                 await db.Database.ExecuteSqlInterpolatedAsync($"""
                     UPDATE "ContentSyncStates" SET "LastSuccessAt" = {attemptedAt}, "LastError" = NULL WHERE "Id" = {kind}
                     """, ct);
                 await transaction.CommitAsync(ct);
-                return new(true, announcements.Count + menus.Count, changed);
+                return new(true, announcements.Count + menus.Count + calendar.Count, changed);
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
             catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or InvalidDataException or IOException
