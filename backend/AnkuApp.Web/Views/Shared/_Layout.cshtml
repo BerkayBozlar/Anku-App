@@ -4,6 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - AnküApp Portal</title>
+    <link rel="icon" href="~/favicon.ico" asp-append-version="true" sizes="16x16 32x32 48x48" />
+    <link rel="icon" href="~/images/anku-logo.svg" asp-append-version="true" type="image/svg+xml" sizes="any" />
     <script type="importmap"></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
@@ -13,7 +15,10 @@
     <header>
         <nav class="navbar navbar-expand-xl navbar-dark bg-anku mb-4">
             <div class="container">
-                <a class="navbar-brand fw-semibold" asp-controller="Home" asp-action="Index">AnküApp Portal</a>
+                <a class="navbar-brand d-inline-flex align-items-center gap-2 fw-semibold" asp-controller="Home" asp-action="Index">
+                    <img src="~/images/anku-logo.svg" asp-append-version="true" width="32" height="32" alt="" />
+                    <span>AnküApp Portal</span>
+                </a>
                 @if (User.Identity?.IsAuthenticated == true)
                 {
                     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"

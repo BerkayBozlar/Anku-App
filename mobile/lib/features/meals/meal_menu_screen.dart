@@ -212,7 +212,7 @@ class _DayCard extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      color: isToday ? theme.colorScheme.primaryContainer : null,
+      color: isToday ? theme.colorScheme.secondaryContainer : null,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
