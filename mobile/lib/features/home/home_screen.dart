@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/theme/anku_logo.dart';
 import '../auth/session_controller.dart';
 import '../health/api_health_card.dart';
 
@@ -31,7 +32,12 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('AnküApp')),
+      appBar: AppBar(
+        title: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [AnkuLogo(size: 28), SizedBox(width: 8), Text('AnküApp')],
+        ),
+      ),
       body: LayoutBuilder(
         builder: (context, constraints) {
           // Telefonda 2, tablette 3-4 sütun

@@ -3,21 +3,20 @@ import 'package:flutter/material.dart';
 class AppTheme {
   const AppTheme._();
 
-  // Ankara Üniversitesi lacivert tonu
-  static const Color primary = Color(0xFF0B3D91);
+  // Logodaki antrasit ton; tema siyah-beyaz-gri tonlarda üretilir
+  static const Color primary = Color(0xFF18181B);
 
-  static ThemeData light() {
-    return ThemeData(
-      colorScheme: ColorScheme.fromSeed(seedColor: primary),
-      useMaterial3: true,
-    );
-  }
+  static ThemeData light() => _build(Brightness.light);
 
-  static ThemeData dark() {
+  static ThemeData dark() => _build(Brightness.dark);
+
+  static ThemeData _build(Brightness brightness) {
     return ThemeData(
       colorScheme: ColorScheme.fromSeed(
         seedColor: primary,
-        brightness: Brightness.dark,
+        brightness: brightness,
+        // Renk tonu yerine yalnız gri tonlar; hata rengi kırmızı kalır
+        dynamicSchemeVariant: DynamicSchemeVariant.monochrome,
       ),
       useMaterial3: true,
     );

@@ -9,7 +9,7 @@ html {
 }
 
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem rgba(24, 24, 27, 0.35);
 }
 
 html {
@@ -25,27 +25,80 @@ html {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
   text-align: start;
 }
-/* AnküApp renkleri (Ankara Üniversitesi lacivert) */
+/* AnküApp renkleri: logodaki antrasit, siyah-beyaz-gri tonlar.
+   Hata/başarı/uyarı renkleri anlam taşıdığı için Bootstrap'taki gibi kalır. */
 :root {
-  --anku-primary: #0b3d91;
-  --anku-primary-dark: #082c6a;
+  --anku-ink: #18181b;
+  --anku-ink-hover: #3f3f46;
+  --anku-ink-active: #09090b;
+  --anku-gray: #71717a;
+  --bs-primary: var(--anku-ink);
+  --bs-primary-rgb: 24, 24, 27;
+  --bs-link-color: var(--anku-ink);
+  --bs-link-color-rgb: 24, 24, 27;
+  --bs-link-hover-color: #52525b;
+  --bs-link-hover-color-rgb: 82, 82, 91;
+  --bs-focus-ring-color: rgba(24, 24, 27, 0.25);
 }
 
+/* Üst menü: logo zeminiyle aynı geçiş */
 .bg-anku {
-  background-color: var(--anku-primary);
+  background: linear-gradient(135deg, #26262a 0%, #08080a 100%);
 }
 
-.btn-anku {
-  color: #fff;
-  background-color: var(--anku-primary);
-  border-color: var(--anku-primary);
+.btn-anku,
+.btn-primary {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: var(--anku-ink);
+  --bs-btn-border-color: var(--anku-ink);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: var(--anku-ink-hover);
+  --bs-btn-hover-border-color: var(--anku-ink-hover);
+  --bs-btn-focus-shadow-rgb: 24, 24, 27;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: var(--anku-ink-active);
+  --bs-btn-active-border-color: var(--anku-ink-active);
+  --bs-btn-disabled-color: #fff;
+  --bs-btn-disabled-bg: var(--anku-gray);
+  --bs-btn-disabled-border-color: var(--anku-gray);
 }
 
-.btn-anku:hover,
-.btn-anku:focus {
-  color: #fff;
-  background-color: var(--anku-primary-dark);
-  border-color: var(--anku-primary-dark);
+.btn-outline-primary {
+  --bs-btn-color: var(--anku-ink);
+  --bs-btn-border-color: var(--anku-ink);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: var(--anku-ink);
+  --bs-btn-hover-border-color: var(--anku-ink);
+  --bs-btn-focus-shadow-rgb: 24, 24, 27;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: var(--anku-ink-active);
+  --bs-btn-active-border-color: var(--anku-ink-active);
+  --bs-btn-disabled-color: var(--anku-gray);
+  --bs-btn-disabled-border-color: #a1a1aa;
+}
+
+.form-control:focus,
+.form-select:focus,
+.form-check-input:focus {
+  border-color: var(--anku-gray);
+}
+
+.form-check-input:checked {
+  background-color: var(--anku-ink);
+  border-color: var(--anku-ink);
+}
+
+.pagination {
+  --bs-pagination-color: var(--anku-ink);
+  --bs-pagination-hover-color: var(--anku-ink-active);
+  --bs-pagination-focus-color: var(--anku-ink-active);
+  --bs-pagination-focus-box-shadow: 0 0 0 0.25rem rgba(24, 24, 27, 0.25);
+  --bs-pagination-active-bg: var(--anku-ink);
+  --bs-pagination-active-border-color: var(--anku-ink);
+}
+
+.nav-pills {
+  --bs-nav-pills-link-active-bg: var(--anku-ink);
 }
 
 .navbar .nav-link {

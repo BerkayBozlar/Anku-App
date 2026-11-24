@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/theme/anku_logo.dart';
 import 'auth_repository.dart';
 import 'auth_validators.dart';
 import 'session_controller.dart';
@@ -62,11 +63,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Icon(
-                      Icons.school_outlined,
-                      size: 56,
-                      color: theme.colorScheme.primary,
-                    ),
+                    const Center(child: AnkuLogo(size: 68)),
                     const SizedBox(height: 12),
                     Text(
                       'AnküApp',
